@@ -6,9 +6,9 @@ import LispkitInterpreter
 
 main :: IO ()
 main = do
-  let input = "(+ n 89)"
+  let input = "(cadr (cons 78 (- n 89)))"
   let output = readSExpr input
   print output
   case output of
-    Right x  -> print $ eval x [("n", SInt 23)]
-    Left err -> print $ err
+    Right x  -> print $ eval x [("n", SInt 100)]
+    Left err -> print err
