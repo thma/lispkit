@@ -11,9 +11,10 @@ eval (SAtom name) env = fromMaybe (SError (name ++ " not found")) (lookup name e
 eval (SList [SAtom "quote", x]) _ = x
 eval (SList [SAtom "lambda", x]) _ = x
 
-eval (SList [op@(SAtom opName), x, y]) env
-  | isBinOp op = binOp opName (eval x env) (eval y env) 
-  | otherwise  = apply (eval op env) (eval x env) (eval y env)
+eval (SList [op@(SAtom opName), x, y]) env =
+  case binOp opName of
+    Just fun -> fun (eval x env) (eval y env)
+    Nothing  -> apply (eval op env) (eval x env) (eval y env)
 
 eval (SList [op@(SAtom opName), x]) env
   | isUnaryOp op = unaryOp opName (eval x env)
@@ -23,17 +24,17 @@ eval x _ = SError $ "No rule for evaluating " ++ show x
 
 apply = undefined
 
+binOp :: String -> Maybe (SExpr -> SExpr -> SExpr)
+binOp "+" = Just $ binaryIntOp (+)
+binOp "-" = Just $ binaryIntOp (-)
+binOp "*" = Just $ binaryIntOp (*)
+binOp "/" = Just $ binaryIntOp div
+binOp "%" = Just $ binaryIntOp rem
+binOp "cons" = Just binOpCons
+binOp _   = Nothing
 
-isBinOp :: SExpr -> Bool
-isBinOp (SAtom op) = op `elem` ["+","-","*","/","%","cons"]
-
-binOp :: String -> SExpr -> SExpr -> SExpr
-binOp "+" = \(SInt x) (SInt y) -> SInt (x + y)
-binOp "-" = \(SInt x) (SInt y) -> SInt (x - y)
-binOp "*" = \(SInt x) (SInt y) -> SInt (x * y)
-binOp "/" = \(SInt x) (SInt y) -> SInt (x `div` y)
-binOp "%" = \(SInt x) (SInt y) -> SInt (x `rem` y)
-binOp "cons" = binOpCons
+binaryIntOp :: (Integer -> Integer -> Integer) -> SExpr -> SExpr -> SExpr
+binaryIntOp op (SInt x) (SInt y) = SInt (x `op` y)
 
 binOpCons :: SExpr -> SExpr -> SExpr
 binOpCons hd (SList tl) = SList (hd:tl)
