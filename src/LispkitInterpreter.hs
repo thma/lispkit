@@ -14,6 +14,11 @@ eval (SList [SAtom "if", test, thenPart, elsePart]) env =
   case (eval test env) of
     (SInt 0) -> eval elsePart env
     (SInt 1) -> eval thenPart env
+
+eval (SList [SAtom "let", expr, definitions]) env =
+  let localEnv = env
+   in eval expr localEnv
+
 eval (SList [op@(SAtom opName), x, y]) env =
   case binOp opName of
     Just fun -> fun (eval x env) (eval y env)
