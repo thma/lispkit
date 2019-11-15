@@ -10,6 +10,10 @@ eval num@(SInt i) _   = num
 eval (SAtom name) env = fromMaybe (SError (name ++ " not found")) (lookup name env)
 eval (SList [SAtom "quote", x]) _ = x
 eval (SList [SAtom "lambda", x]) _ = x
+eval (SList [SAtom "if", test, thenPart, elsePart]) env =
+  case (eval test env) of
+    (SInt 0) -> eval elsePart env
+    (SInt 1) -> eval thenPart env
 eval (SList [op@(SAtom opName), x, y]) env =
   case binOp opName of
     Just fun -> fun (eval x env) (eval y env)
@@ -19,14 +23,14 @@ eval (SList [op@(SAtom opName), x]) env =
     Just fun -> fun (eval x env)
     Nothing  -> apply (eval op env) (eval x env) env
 
-eval (SList [fun@(SList [SAtom "lambda", SList vars, SList body]), args@(SList _)]) env =
-  apply fun args env
+eval (SList (fun@(SList [SAtom "lambda", SList vars, SList body]):args)) env =
+  apply fun (SList args) env
 
 eval x _ = SError $ "No rule for evaluating " ++ show x
 
 apply :: SExpr -> SExpr -> Environment -> SExpr
-apply fun@(SList [SAtom "lambda", SList vars, body@(SList _)]) (SList args) env =
-  eval body $ zip (map (\(SAtom name) -> name) vars) args ++ env
+apply fun@(SList [SAtom "lambda", SList vars, body@(SList _)]) (SList args) env = eval body localEnv
+  where localEnv = zip (map (\(SAtom name) -> name) vars) args ++ env
 
 binOp :: String -> Maybe (SExpr -> SExpr -> SExpr)
 binOp "+" = Just $ binaryIntOp (+)
@@ -34,6 +38,7 @@ binOp "-" = Just $ binaryIntOp (-)
 binOp "*" = Just $ binaryIntOp (*)
 binOp "/" = Just $ binaryIntOp div
 binOp "%" = Just $ binaryIntOp rem
+binOp "eq" = Just (\(SInt x) (SInt y) -> if x == y then SInt 1 else SInt 0)
 binOp "cons" = Just binOpCons
 binOp _   = Nothing
 
@@ -58,7 +63,6 @@ opCar (SList (hd:_)) = hd
 
 opCdr :: SExpr -> SExpr
 opCdr (SList (_:tl)) = SList tl
-
 
 
 
