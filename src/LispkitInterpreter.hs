@@ -87,19 +87,8 @@ toString (SList list) = "(" ++ render list ++ ")"
     render [hd] = toString hd
     render (hd:tl) = toString hd ++ " " ++ render tl
 
-test :: IO ()
-test = do
-  let input = "(fac (lambda (n) (if (eq n 0) 1 (* n (fac (- n 1))))) test (lambda (x) (* x x)))" --"(let (fac 10) (fac (lambda (n) (if (eq n 0) 1 (* n (fac (- n 1)))))))"
-      defs  = readSExpr input
-      inp2 = "(fac 10)"
-      term2 = readSExpr inp2
-
-  case defs of
-        Right def  -> print $ makeEnv def
-
-  case defs of
-      Right def  -> case term2 of
-        Right expr -> print $ eval expr (makeEnv def)
+--"(let (fac 100) (fac (lambda (n) (if (eq n 0) 1 (* n (fac (- n 1)))))))"
+--"(let (even 101) (even (lambda (n) (if (eq 0 (% n 2)) 1 0))))
 
 
 
