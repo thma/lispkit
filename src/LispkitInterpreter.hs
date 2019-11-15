@@ -32,7 +32,7 @@ eval (SList [op@(SAtom opName), x, y]) env =
 eval (SList [op@(SAtom opName), x]) env =
   case unaryOp opName of
     Just fun -> fun (eval x env)
-    Nothing  -> apply (eval op env) (SList [(eval x env)]) env
+    Nothing  -> apply (eval op env) (SList [eval x env]) env
 
 eval (SList (fun@(SList [SAtom "lambda", SList vars, SList _body]):args)) env =
   apply fun (SList args) env
@@ -77,6 +77,15 @@ opCar (SList (hd:_)) = hd
 opCdr :: SExpr -> SExpr
 opCdr (SList (_:tl)) = SList tl
 
+toString :: SExpr -> String
+toString (SAtom str) = str
+toString (SInt i)    = show i
+toString (SError str) = str
+toString (SList list) = "(" ++ render list ++ ")"
+  where
+    render [] = ""
+    render [hd] = toString hd
+    render (hd:tl) = toString hd ++ " " ++ render tl
 
 test :: IO ()
 test = do
@@ -84,7 +93,6 @@ test = do
       defs  = readSExpr input
       inp2 = "(fac 10)"
       term2 = readSExpr inp2
-  -- print defs
 
   case defs of
         Right def  -> print $ makeEnv def
@@ -93,8 +101,5 @@ test = do
       Right def  -> case term2 of
         Right expr -> print $ eval expr (makeEnv def)
 
---  case term of
---    Right x  -> print $ eval x [("n", SInt 100)]
---    Left err -> print err
 
 

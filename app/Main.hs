@@ -4,15 +4,37 @@ import LambdaCompiler
 import LispkitParser
 import LispkitInterpreter
 
+import System.Environment
+import Control.Monad
+import Control.Monad.Except
+import System.IO hiding(try)
+
+flushStr :: String -> IO()
+flushStr str = putStr str >> hFlush stdout
+
+readPrompt :: String -> IO String
+readPrompt prompt = flushStr prompt >> getLine
+
+evalString :: String -> IO String
+evalString expr = return $
+  case readSExpr expr of
+    Right x  -> toString $ eval x []
+    Left err -> show err
+
+trapError action = catchError action (return . show)
+
+evalAndPrint :: String -> IO ()
+evalAndPrint expr = evalString expr >>= putStrLn
+
+until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m()
+until_ pred prompt action = do
+  result <- prompt
+  if pred result
+    then return ()
+    else action result >> until_ pred prompt action
+
+runRepl :: IO ()
+runRepl = until_ (== "quit") (readPrompt "Lisp>>> ") evalAndPrint
+
 main :: IO ()
-main = do
-  let input = "(let (fac 10) (fac (lambda (n) (if (eq n 0) 1 (* n (fac (- n 1)))))))"
-  -- "((lambda (f n) (if (eq n 0) 1 (* n (f f (- n 1))))) (lambda (f n) (if (eq n 0) 1 (* n (f f (- n 1))))) 10)"  --"(cadr (cons 78 (- n 89)))"
-  let output = readSExpr input
-  print output
-  case output of
-    Right x  -> print $ eval x [("n", SInt 100)]
-    Left err -> print err
-
-
--- (let (fac 10) (fac (lambda (n) (if (eq n 0) 1 (* n (fac (- n 1)))))))
+main = runRepl
