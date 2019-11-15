@@ -23,3 +23,5 @@ cabal.project.local~
 *.cabal
 stack.yaml
 stack.yaml.lock
+.idea/
+*.iml
