@@ -31,9 +31,8 @@ evalFile env file = do
 repLoop :: Environment -> IO ()
 repLoop env = do
   input <- readPrompt "> "
-  case input
+  case input of
     -- quit REPL
-        of
     ":q" -> do
       putStrLn "bye..."
       return ()
@@ -77,7 +76,8 @@ separateNameAndValue str =
 main = do
   hSetEncoding stdin utf8
   hSetEncoding stdout utf8
-  repLoop [("it", SAtom "welcome to lispkit lisp")]
+  putStrLn "Welcome to lispkit"
+  repLoop [("it", SAtom "welcome to lispkit")]
 
 
 -- trapError action = catchError action (return . show)
