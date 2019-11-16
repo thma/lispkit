@@ -16,7 +16,7 @@ makeEnv (SList (SAtom name:val:tl)) = (name, val) : makeEnv (SList tl)
 eval :: SExpr -> Environment -> SExpr
 eval num@(SInt _) _   = num
 eval bool@(SBool _) _ = bool
-eval (SAtom name) env = fromMaybe (SError (name ++ " not found")) (lookup name env)
+eval (SAtom name) env = fromMaybe (error (name ++ " not found")) (lookup name env)
 eval (SList [SAtom "quote", x]) _ = x
 eval (SList [SAtom "lambda", x]) _ = x
 eval (SList [SAtom "if", test, thenPart, elsePart]) env =
@@ -40,12 +40,12 @@ eval (SList [op@(SAtom opName), x]) env =
 eval (SList (fun@(SList [SAtom "lambda", SList vars, SList _body]):args)) env =
   apply fun (SList args) env
 
-eval x _ = SError $ "No rule for evaluating " ++ show x
+eval x _ = error $ "No rule for evaluating " ++ toString x
 
 apply :: SExpr -> SExpr -> Environment -> SExpr
 apply fun@(SList [SAtom "lambda", SList vars, body@(SList _)]) (SList args) env = eval body localEnv
   where localEnv = zip (map (\(SAtom name) -> name) vars) args ++ env
-apply fun args env = SError ("apply issue: " ++ "\n fun: " ++ show fun ++ "\nargs: " ++ show args ++ "\n env: " ++ show env)
+apply fun args env = error $ "apply issue: " ++ "\n fun: " ++ toString fun ++ "\nargs: " ++ toString args -- ++ "\n env: " ++ show env
 
 
 binOp :: String -> Maybe (SExpr -> SExpr -> SExpr)
@@ -86,7 +86,7 @@ unaryOp "null" = Just (\case
                          _ -> SBool False)
 unaryOp "not"  = Just (\(SBool x) -> SBool (not x))
 unaryOp "chr"  = Just (\(SInt i)  -> SAtom [chr (fromInteger i)])
-
+unaryOp "explode" = Just (\(SAtom atom) -> SList $ map (\c -> SAtom [c]) atom)
 unaryOp _      = Nothing
 
 opCar :: SExpr -> SExpr
@@ -99,7 +99,7 @@ toString :: SExpr -> String
 toString (SAtom str) = str
 toString (SInt i)    = show i
 toString (SBool bool) =  if bool then "true" else "false"
-toString (SError str) = str
+--toString (SError str) = str
 toString (SList list) = "(" ++ render list ++ ")"
   where
     render [] = ""
