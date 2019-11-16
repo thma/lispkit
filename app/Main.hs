@@ -15,28 +15,29 @@ flushStr str = putStr str >> hFlush stdout
 readPrompt :: String -> IO String
 readPrompt prompt = flushStr prompt >> getLine
 
-evalString :: String -> IO String
-evalString expr = return $
+evalString :: Environment -> String -> IO String
+evalString env expr = return $
   case readSExpr expr of
-    Right x  -> toString $ eval x []
+    Right x  -> toString $ eval x env
     Left err -> show err
 
 trapError action = catchError action (return . show)
 
-evalAndPrint :: String -> IO ()
-evalAndPrint expr =
+evalAndPrint :: Environment -> String -> IO ()
+evalAndPrint env expr =
   case expr of
     ":r" -> undefined
-    (':':'l':' ':file) -> evalFile file
+    (':':'d':' ':name:' ':value) -> undefined
+    (':':'l':' ':file) -> evalFile env file
     _    -> do
-      result <- evalString expr
+      result <- evalString env expr
       putStrLn result
 
-evalFile :: FilePath -> IO ()
-evalFile file = do
+evalFile :: Environment -> FilePath -> IO ()
+evalFile env file = do
   putStrLn $ "loading " ++ file ++ "..."
   input <- readFile file
-  result <- evalString input
+  result <- evalString env input
   putStrLn result
 
 until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m()
@@ -46,11 +47,11 @@ until_ pred prompt action = do
     then return ()
     else action result >> until_ pred prompt action
 
-runRepl :: IO ()
-runRepl = until_ (\x -> x == "quit" || x == ":q") (readPrompt "λ> ") evalAndPrint
+runRepl :: Environment -> IO ()
+runRepl env = until_ (\x -> x == "quit" || x == ":q") (readPrompt "λ> ") (evalAndPrint env)
 
 main :: IO ()
 main = do
   hSetEncoding stdin utf8
   hSetEncoding stdout utf8
-  runRepl
+  runRepl [("hallo", SAtom "Welt")]
