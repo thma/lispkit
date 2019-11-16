@@ -1,13 +1,13 @@
 module Main where
 
-import LambdaCompiler
-import LispkitParser
-import LispkitInterpreter
-
 import System.Environment
 import Control.Monad
 import Control.Monad.Except
-import System.IO hiding(try)
+--import System.IO hiding(try)
+import           System.IO                (hSetEncoding, stdin, stdout, utf8, hFlush)
+
+import LispkitParser
+import LispkitInterpreter
 
 flushStr :: String -> IO()
 flushStr str = putStr str >> hFlush stdout
@@ -24,7 +24,20 @@ evalString expr = return $
 trapError action = catchError action (return . show)
 
 evalAndPrint :: String -> IO ()
-evalAndPrint expr = evalString expr >>= putStrLn
+evalAndPrint expr =
+  case expr of
+    ":r" -> undefined
+    (':':'l':' ':file) -> evalFile file
+    _    -> do
+      result <- evalString expr
+      putStrLn result
+
+evalFile :: FilePath -> IO ()
+evalFile file = do
+  putStrLn $ "loading " ++ file ++ "..."
+  input <- readFile file
+  result <- evalString input
+  putStrLn result
 
 until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m()
 until_ pred prompt action = do
@@ -34,7 +47,10 @@ until_ pred prompt action = do
     else action result >> until_ pred prompt action
 
 runRepl :: IO ()
-runRepl = until_ (== "quit") (readPrompt "Lisp>>> ") evalAndPrint
+runRepl = until_ (\x -> x == "quit" || x == ":q") (readPrompt "λ> ") evalAndPrint
 
 main :: IO ()
-main = runRepl
+main = do
+  hSetEncoding stdin utf8
+  hSetEncoding stdout utf8
+  runRepl

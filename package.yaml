@@ -28,7 +28,7 @@ library:
   source-dirs: src
 
 executables:
-  lispkit-exe:
+  lispkit:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
