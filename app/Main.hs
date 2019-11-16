@@ -31,8 +31,9 @@ evalFile env file = do
 repLoop :: Environment -> IO ()
 repLoop env = do
   input <- readPrompt "> "
-  case input of
+  case input
     -- quit REPL
+        of
     ":q" -> do
       putStrLn "bye..."
       return ()
@@ -49,7 +50,7 @@ repLoop env = do
           putStrLn $ "(define " ++ name ++ " " ++ toString result ++ ")"
           repLoop $ (name, result) : env
         Left err -> do
-          putStrLn $ show err
+          print err
           repLoop env
     -- reload last file
     ":r" ->
@@ -67,11 +68,11 @@ repLoop env = do
       putStrLn $ toString result
       repLoop $ ("it", result) : env :: IO ()
 
-separateNameAndValue str = 
+separateNameAndValue str =
   let name  = (head . words) str
       value = drop (1 + length name) str
-  in (name, value) 
-      
+  in (name, value)
+
 
 main = do
   hSetEncoding stdin utf8
