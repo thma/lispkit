@@ -12,7 +12,8 @@ makeEnv (SList (SAtom name:val:tl)) = (name, val) : makeEnv (SList tl)
 
 
 eval :: SExpr -> Environment -> SExpr
-eval num@(SInt i) _   = num
+eval num@(SInt _) _   = num
+eval bool@(SBool _) _ = bool
 eval (SAtom name) env = fromMaybe (SError (name ++ " not found")) (lookup name env)
 eval (SList [SAtom "quote", x]) _ = x
 eval (SList [SAtom "lambda", x]) _ = x
@@ -80,6 +81,7 @@ opCdr (SList (_:tl)) = SList tl
 toString :: SExpr -> String
 toString (SAtom str) = str
 toString (SInt i)    = show i
+toString (SBool bool) =  if bool then "true" else "false"
 toString (SError str) = str
 toString (SList list) = "(" ++ render list ++ ")"
   where
