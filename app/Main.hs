@@ -15,43 +15,69 @@ flushStr str = putStr str >> hFlush stdout
 readPrompt :: String -> IO String
 readPrompt prompt = flushStr prompt >> getLine
 
-evalString :: Environment -> String -> IO String
+evalString :: Environment -> String -> IO SExpr
 evalString env expr = return $
   case readSExpr expr of
-    Right x  -> toString $ eval x env
-    Left err -> show err
+    Right x  -> eval x env
+    Left err -> SAtom $ show err
 
-trapError action = catchError action (return . show)
-
-evalAndPrint :: Environment -> String -> IO ()
-evalAndPrint env expr =
-  case expr of
-    ":r" -> undefined
-    (':':'d':' ':name:' ':value) -> undefined
-    (':':'l':' ':file) -> evalFile env file
-    _    -> do
-      result <- evalString env expr
-      putStrLn result
-
-evalFile :: Environment -> FilePath -> IO ()
+evalFile :: Environment -> FilePath -> IO SExpr
 evalFile env file = do
   putStrLn $ "loading " ++ file ++ "..."
   input <- readFile file
-  result <- evalString env input
-  putStrLn result
+  evalString env input
 
-until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m()
-until_ pred prompt action = do
-  result <- prompt
-  if pred result
-    then return ()
-    else action result >> until_ pred prompt action
 
-runRepl :: Environment -> IO ()
-runRepl env = until_ (\x -> x == "quit" || x == ":q") (readPrompt "λ> ") (evalAndPrint env)
+repLoop :: Environment -> IO ()
+repLoop env = do
+  input <- readPrompt "> "
+  case input
+    -- quit REPL
+        of
+    ":q" -> do
+      putStrLn "bye..."
+      return ()
+    -- load a file
+    (':':'l':' ':file) -> do
+      result <- evalFile env file
+      putStrLn $ toString result
+      repLoop $ ("_lastfile", SAtom file) : ("it", result) : env
+    -- define a global value
+    (':':'d':' ':nameVal) -> do
+      let (name, value) = separateNameAndValue nameVal
+      case readSExpr value of
+        Right result -> do
+          putStrLn $ "(define " ++ name ++ " " ++ toString result ++ ")"
+          repLoop $ (name, result) : env
+        Left err -> do
+          putStrLn $ show err
+          repLoop env
+    -- reload last file
+    ":r" ->
+      case lookup "_lastfile" env of
+        Just (SAtom file) -> do
+          result <- evalFile env file
+          putStrLn $ toString result
+          repLoop $ ("it", result) : env
+        Nothing -> do
+          putStrLn "use :l to load a file first"
+          repLoop env
+    -- normal evaluation of lisp terms
+    _ -> do
+      result <- evalString env input
+      putStrLn $ toString result
+      repLoop $ ("it", result) : env :: IO ()
 
-main :: IO ()
+separateNameAndValue str = 
+  let name  = (head . words) str
+      value = drop (1 + length name) str
+  in (name, value) 
+      
+
 main = do
   hSetEncoding stdin utf8
   hSetEncoding stdout utf8
-  runRepl [("hallo", SAtom "Welt")]
+  repLoop [("it", SAtom "welcome to lispkit lisp")]
+
+
+-- trapError action = catchError action (return . show)
