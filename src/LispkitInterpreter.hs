@@ -19,8 +19,8 @@ eval (SList [SAtom "quote", x]) _ = x
 eval (SList [SAtom "lambda", x]) _ = x
 eval (SList [SAtom "if", test, thenPart, elsePart]) env =
   case eval test env of
-    (SInt 0) -> eval elsePart env
-    (SInt 1) -> eval thenPart env
+    (SBool True)  -> eval thenPart env
+    (SBool False) -> eval elsePart env
 
 eval (SList [SAtom "let", expr, definitions]) env =
   let localEnv = makeEnv definitions ++ env
@@ -52,7 +52,7 @@ binOp "-" = Just $ binaryIntOp (-)
 binOp "*" = Just $ binaryIntOp (*)
 binOp "/" = Just $ binaryIntOp div
 binOp "%" = Just $ binaryIntOp rem
-binOp "eq" = Just (\(SInt x) (SInt y) -> if x == y then SInt 1 else SInt 0)
+binOp "eq" = Just (\(SInt x) (SInt y) -> if x == y then SBool True else SBool False)
 binOp "cons" = Just binOpCons
 binOp _   = Nothing
 
@@ -89,8 +89,6 @@ toString (SList list) = "(" ++ render list ++ ")"
     render [hd] = toString hd
     render (hd:tl) = toString hd ++ " " ++ render tl
 
---"(let (fac 100) (fac (lambda (n) (if (eq n 0) 1 (* n (fac (- n 1)))))))"
---"(let (even 101) (even (lambda (n) (if (eq 0 (% n 2)) 1 0))))
 
 
 

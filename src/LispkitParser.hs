@@ -45,9 +45,9 @@ parseExpr :: Parser SExpr
 parseExpr = parseAtom
         <|> parseNumber
         <|> parseQuoted
-        <|> do lexeme (char '(')
+        <|> do char '('
                x <- try parseSList
-               lexeme (char ')')
+               char ')'
                return x
 
 lexeme :: Parser a -> Parser a
