@@ -28,16 +28,18 @@ data LTerm = LInt Integer
 parseTerm :: (MonadError CompileError m) => SExpr -> m LTerm
 parseTerm (SAtom v) = return $ LVar v
 parseTerm (SInt n) = return $ LInt n
+--parseTerm (SList [SAtom "lambda", SList vars, t]) = do
+parseTerm (SList [SAtom "lambda", SList [SAtom var], t]) = do
+  t' <- parseTerm t
+  return $ LAbs var t'
 parseTerm (SList [SAtom fun, t1, t2]) = do
   t1' <- parseTerm t1
   t2' <- parseTerm t2
   case binOp fun of
     Just op -> return $ LBinPrimOp fun t1' t2'
-    Nothing  -> undefined --apply (eval op env) (SList [eval x env, eval y env]) env  
+    Nothing  -> return $ LBinPrimOp (fun ++ ": not found") t1' t2' --apply (eval op env) (SList [eval x env, eval y env]) env
     
-parseTerm (SList [SAtom "lambda", SList [SAtom var], t]) = do
-  t' <- parseTerm t
-  return $ LAbs var t'
+
 parseTerm (SList [t1, t2]) = do
   t1' <- parseTerm t1
   t2' <- parseTerm t2
@@ -53,3 +55,9 @@ compile = readSExpr' >=> parseTerm
     readSExpr' :: String -> Either CompileError SExpr
     readSExpr' = first (const ParseError) . readSExpr
 
+test :: IO ()
+test = do
+  let expr = "(lambda (n) (+ (* n 8) m))"
+  case compile expr of
+    Right term -> print term
+    Left  err  -> print err

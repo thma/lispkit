@@ -53,3 +53,11 @@ opCar (SList (hd:_)) = hd
 
 opCdr :: UnyOp
 opCdr (SList (_:tl)) = SList tl
+
+isPrimOp :: String -> Bool
+isPrimOp name = 
+  case binOp name of
+    Just _  -> True
+    Nothing -> case unaryOp name of
+      Just _  -> True
+      Nothing -> False

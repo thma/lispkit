@@ -1,13 +1,11 @@
 module Main where
 
-import System.Environment
-import Control.Monad
-import Control.Monad.Except
---import System.IO hiding(try)
-import           System.IO                (hSetEncoding, stdin, stdout, utf8, hFlush)
-
-import LispkitParser
-import LispkitInterpreter
+import           Control.Monad
+import           Control.Monad.Except
+import           System.Environment
+import           System.IO            (hFlush, hSetEncoding, stdin, stdout, utf8)
+import           LispkitInterpreter
+import           LispkitParser
 
 flushStr :: String -> IO()
 flushStr str = putStr str >> hFlush stdout
@@ -71,8 +69,7 @@ repLoop env = do
 separateNameAndValue str =
   let name  = (head . words) str
       value = drop (1 + length name) str
-  in (name, value)
-
+   in (name, value)
 
 main = do
   hSetEncoding stdin utf8

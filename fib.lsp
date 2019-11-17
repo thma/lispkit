@@ -1,8 +1,8 @@
 (let (fib 5)
     (fib (lambda (n)
-            (if (leq n 0)
+            (if (eq n 0)
                 0
-                (if (leq n 1)
+                (if (eq n 1)
                     1
                     (+ (fib (- n 1)
                        (fib (- n 2)))))))))
