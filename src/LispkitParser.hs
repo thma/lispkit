@@ -1,6 +1,7 @@
 module LispkitParser
     ( readSExpr
     , SExpr(..)
+    , toString
     ) where
 
 import Control.Monad
@@ -55,3 +56,13 @@ lexeme parser = parser <* P.spaces
 -- | Parse an s-expression
 readSExpr :: String -> Either ParseError SExpr
 readSExpr = parse parseExpr "SExpr"
+
+toString :: SExpr -> String
+toString (SAtom str) = str
+toString (SInt i)    = show i
+toString (SBool bool) =  if bool then "true" else "false"
+toString (SList list) = "(" ++ render list ++ ")"
+  where
+    render [] = ""
+    render [hd] = toString hd
+    render (hd:tl) = toString hd ++ " " ++ render tl

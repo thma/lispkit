@@ -2,12 +2,14 @@
 
 module LambdaCompiler
     ( compile
+    , parseTerm
     , CompileError(..)
     ) where
 
 import Control.Monad.Except
 import Data.Bifunctor
 import LispkitParser
+import Primops
 
 data CompileError = CompileError
                   | ParseError
@@ -16,11 +18,8 @@ data CompileError = CompileError
 -- | 
 data LTerm = LInt Integer
            | LVar String
-           | LAdd LTerm LTerm
-           | LSub LTerm LTerm
-           | LMul LTerm LTerm
-           | LDiv LTerm LTerm
-           | LMod LTerm LTerm
+           | LBinPrimOp String LTerm LTerm
+           | LUnyPrimOp String LTerm LTerm
            | LApp LTerm LTerm
            | LAbs String LTerm
              deriving (Show, Eq)
@@ -29,26 +28,13 @@ data LTerm = LInt Integer
 parseTerm :: (MonadError CompileError m) => SExpr -> m LTerm
 parseTerm (SAtom v) = return $ LVar v
 parseTerm (SInt n) = return $ LInt n
-parseTerm (SList [SAtom "+", t1, t2]) = do
+parseTerm (SList [SAtom fun, t1, t2]) = do
   t1' <- parseTerm t1
   t2' <- parseTerm t2
-  return $ LAdd t1' t2'
-parseTerm (SList [SAtom "-", t1, t2]) = do
-  t1' <- parseTerm t1
-  t2' <- parseTerm t2
-  return $ LSub t1' t2'
-parseTerm (SList [SAtom "*", t1, t2]) = do
-  t1' <- parseTerm t1
-  t2' <- parseTerm t2
-  return $ LMul t1' t2'
-parseTerm (SList [SAtom "/", t1, t2]) = do
-  t1' <- parseTerm t1
-  t2' <- parseTerm t2
-  return $ LDiv t1' t2'
-parseTerm (SList [SAtom "%", t1, t2]) = do
-  t1' <- parseTerm t1
-  t2' <- parseTerm t2
-  return $ LMod t1' t2'
+  case binOp fun of
+    Just op -> return $ LBinPrimOp fun t1' t2'
+    Nothing  -> undefined --apply (eval op env) (SList [eval x env, eval y env]) env  
+    
 parseTerm (SList [SAtom "lambda", SList [SAtom var], t]) = do
   t' <- parseTerm t
   return $ LAbs var t'
