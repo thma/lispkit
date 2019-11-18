@@ -67,6 +67,10 @@ repLoop env = do
       case compile input of
         Right term -> print term
         Left  err  -> print err
+      -- print the parsed SExpr
+      case readSExpr input of
+        Right x  -> print x
+        Left err -> print err
       -- eval the SExpr
       result <- evalString env input
       putStrLn $ toString result

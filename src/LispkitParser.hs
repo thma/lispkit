@@ -13,6 +13,7 @@ data SExpr = SAtom String
            | SList [SExpr]
            | SInt Integer
            | SBool Bool
+           deriving (Show, Eq)
 
 symbol :: Parser Char
 symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
