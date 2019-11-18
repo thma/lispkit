@@ -38,15 +38,12 @@ parseTerm (SList [SAtom fun, t1, t2]) = do
   case binOp fun of
     Just op -> return $ LBinPrimOp fun t1' t2'
     Nothing  -> return $ LBinPrimOp (fun ++ ": not found") t1' t2' --apply (eval op env) (SList [eval x env, eval y env]) env
-    
 
 parseTerm (SList [t1, t2]) = do
   t1' <- parseTerm t1
   t2' <- parseTerm t2
   return $ LApp t1' t2'
 parseTerm _ = throwError CompileError
-
-
 
 -- | Compile the given lisp code to lambda terms
 compile :: String -> Either CompileError LTerm

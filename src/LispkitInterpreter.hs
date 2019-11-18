@@ -10,7 +10,7 @@ type Environment = [(String, SExpr)]
 eval :: SExpr -> Environment -> SExpr
 eval num@(SInt _) _   = num
 eval bool@(SBool _) _ = bool
-eval exp@(SAtom name) env = -- fromMaybe (error (name ++ " not found")) (lookup name env)
+eval exp@(SAtom name) env =
   case lookup name env of
     Just value -> value
     Nothing    -> if isPrimOp name then exp else error (name ++ " not found")

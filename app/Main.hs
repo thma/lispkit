@@ -6,6 +6,7 @@ import           System.Environment
 import           System.IO            (hFlush, hSetEncoding, stdin, stdout, utf8)
 import           LispkitInterpreter
 import           LispkitParser
+import           LambdaCompiler       (compile)
 
 flushStr :: String -> IO()
 flushStr str = putStr str >> hFlush stdout
@@ -62,6 +63,11 @@ repLoop env = do
           repLoop env
     -- normal evaluation of lisp terms
     _ -> do
+      -- compile to lambda term
+      case compile input of
+        Right term -> print term
+        Left  err  -> print err
+      -- eval the SExpr
       result <- evalString env input
       putStrLn $ toString result
       repLoop $ ("it", result) : env :: IO ()
