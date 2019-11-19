@@ -33,6 +33,8 @@ eval (SList [op@(SAtom opName), x]) env =
     Nothing  -> apply (eval op env) (SList [eval x env]) env
 eval (SList (fun@(SList [SAtom "lambda", SList vars, SList _body]):args)) env =
   apply fun (SList args) env
+eval (SList (fun:args)) env = 
+  eval (SList ((eval fun env):args)) env
 eval x _ = error $ "No rule for evaluating " ++ toString x
 
 apply :: SExpr -> SExpr -> Environment -> SExpr
@@ -43,7 +45,3 @@ apply fun args env = error $ "apply issue: " ++ "\n fun: " ++ toString fun ++ "\
 makeEnv :: SExpr -> Environment
 makeEnv (SList [])                  = []
 makeEnv (SList (SAtom name:val:tl)) = (name, val) : makeEnv (SList tl)
-
-
-
-
