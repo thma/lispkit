@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
-
 module LambdaCompiler
-    ( compile
+    ( compileToLambda
     , parseTerm
     , CompileError(..)
     ) where
@@ -23,7 +22,7 @@ data LTerm = LInt Integer
            | LBinOp String LTerm LTerm
            | LUnyPrimOp String LTerm
            | LUnyOp String LTerm
-           | LApp LTerm LTerm
+           | LApp LTerm [LTerm]
            | LAbs String LTerm
              deriving (Show, Eq)
 
@@ -52,18 +51,18 @@ parseTerm (SList [SAtom fun, t1]) = do
     Just op -> return $ LUnyPrimOp fun t1'
     Nothing -> return $ LUnyOp fun t1'
 
-parseTerm (SList [t1, t2]) = do
+parseTerm (SList (t1:args)) = do
   t1' <- parseTerm t1
-  t2' <- parseTerm t2
-  return $ LApp t1' t2'
+  args' <- mapM parseTerm args
+  return $ LApp t1' args'
 
 parseTerm _ = throwError CompileError
 
 
 
 -- | Compile the given lisp code to lambda terms
-compile :: String -> Either CompileError LTerm
-compile = readSExpr' >=> parseTerm
+compileToLambda :: String -> Either CompileError LTerm
+compileToLambda = readSExpr' >=> parseTerm
   where
     readSExpr' :: String -> Either CompileError SExpr
     readSExpr' = first (const ParseError) . readSExpr
@@ -71,6 +70,6 @@ compile = readSExpr' >=> parseTerm
 test :: IO ()
 test = do
   let expr = "(lambda (n) (+ (* n 8) m))"
-  case compile expr of
+  case compileToLambda expr of
     Right term -> print term
     Left  err  -> print err

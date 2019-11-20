@@ -14,7 +14,7 @@ eval exp@(SAtom name) env =
   case lookup name env of
     Just value -> value
     Nothing    -> if isPrimOp name then exp else error (name ++ " not found")
-eval (SList [SAtom "quote", x]) _ = x
+eval (SList [SAtom "quote", expr]) _   = expr
 eval expr@(SList (SAtom "lambda":_)) _ = expr
 eval (SList [SAtom "if", test, thenPart, elsePart]) env =
   case eval test env of

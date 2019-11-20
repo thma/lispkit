@@ -6,7 +6,7 @@ import           System.Environment
 import           System.IO            (hFlush, hSetEncoding, stdin, stdout, utf8)
 import           LispkitInterpreter
 import           LispkitParser
-import           LambdaCompiler       (compile)
+import           LambdaCompiler       (compileToLambda)
 
 flushStr :: String -> IO()
 flushStr str = putStr str >> hFlush stdout
@@ -42,7 +42,8 @@ repLoop env = do
       putStrLn $ toString result
       repLoop $ ("_lastfile", SAtom file) : ("it", result) : env
     -- define a global value
-    (':':'d':' ':nameVal) -> do
+    ('(':'d':'e':'f':'i':'n':'e':' ':nameVal) -> do
+    --(':':'d':' ':nameVal) -> do
       let (name, value) = separateNameAndValue nameVal
       case readSExpr value of
         Right result -> do
@@ -64,7 +65,7 @@ repLoop env = do
     -- normal evaluation of lisp terms
     _ -> do
       -- compile to lambda term
-      case compile input of
+      case compileToLambda input of
         Right term -> print term
         Left  err  -> print err
       -- print the parsed SExpr
