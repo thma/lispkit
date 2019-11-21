@@ -7,6 +7,8 @@ import           System.IO            (hFlush, hSetEncoding, stdin, stdout, utf8
 import           LispkitInterpreter
 import           LispkitParser
 import           LambdaCompiler       (compileToLambda)
+import qualified LambdaInterpreter as L
+
 
 flushStr :: String -> IO()
 flushStr str = putStr str >> hFlush stdout
@@ -66,7 +68,10 @@ repLoop env = do
     _ -> do
       -- compile to lambda term
       case compileToLambda input of
-        Right term -> print term
+        Right term -> do
+          print term
+          result <- L.eval term []
+          print result
         Left  err  -> print err
       -- print the parsed SExpr
       case readSExpr input of

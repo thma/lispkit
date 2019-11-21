@@ -3,6 +3,7 @@ module LambdaCompiler
     ( compileToLambda
     , parseTerm
     , CompileError(..)
+    , LTerm (..)
     ) where
 
 import Control.Monad.Except
@@ -10,7 +11,7 @@ import Data.Bifunctor
 import LispkitParser
 import Primops
 
-data CompileError = CompileError
+data CompileError = CompileError String
                   | ParseError
                     deriving Show
 
@@ -26,7 +27,7 @@ data LTerm = LInt Integer
            | LAbs String LTerm
              deriving (Show, Eq)
 
--- | a lambda term from a lisp symbolic expression
+-- | parse a lambda term from a lisp symbolic expression
 parseTerm :: (MonadError CompileError m) => SExpr -> m LTerm
 parseTerm (SAtom v) = return $ LVar v
 parseTerm (SInt n)  = return $ LInt n
@@ -35,8 +36,8 @@ parseTerm (SList [SAtom "lambda", SList vars, t]) = do
   t' <- parseTerm t
   return $ abstractVars vars t'
     where
-      abstractVars ([SAtom var])      term = LAbs var term
-      abstractVars ((SAtom var):rest) term = LAbs var (abstractVars rest term)
+      abstractVars [SAtom var]        term = LAbs var term
+      abstractVars (SAtom var : rest) term = LAbs var (abstractVars rest term)
 
 parseTerm (SList [SAtom fun, t1, t2]) = do
   t1' <- parseTerm t1
@@ -56,8 +57,7 @@ parseTerm (SList (t1:args)) = do
   args' <- mapM parseTerm args
   return $ LApp t1' args'
 
-parseTerm _ = throwError CompileError
-
+parseTerm term = throwError $ CompileError (show term)
 
 
 -- | Compile the given lisp code to lambda terms

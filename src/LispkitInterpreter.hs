@@ -11,9 +11,9 @@ eval :: SExpr -> Environment -> SExpr
 eval num@(SInt _) _   = num
 eval bool@(SBool _) _ = bool
 eval exp@(SAtom name) env =
-  case lookup name env of
-    Just value -> value
-    Nothing    -> if isPrimOp name then exp else error (name ++ " not found")
+  fromMaybe
+    (if isPrimOp name then exp else error (name ++ " not found"))
+    (lookup name env)
 eval (SList [SAtom "quote", expr]) _   = expr
 eval expr@(SList (SAtom "lambda":_)) _ = expr
 eval (SList [SAtom "if", test, thenPart, elsePart]) env =
@@ -34,7 +34,7 @@ eval (SList [op@(SAtom opName), x]) env =
 eval (SList (fun@(SList [SAtom "lambda", SList vars, SList _body]):args)) env =
   apply fun (SList args) env
 eval (SList (fun:args)) env = 
-  eval (SList ((eval fun env):args)) env
+  eval (SList (eval fun env : args)) env
 eval x _ = error $ "No rule for evaluating " ++ toString x
 
 apply :: SExpr -> SExpr -> Environment -> SExpr
