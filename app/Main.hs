@@ -70,8 +70,7 @@ repLoop env = do
       case compileToLambda input of
         Right term -> do
           print term
-          print (L.eval term []) `catchError ` (return . return ())
-
+          print (L.eval term []) --`catchError ` (return . return ())
         Left  err  -> print err
       -- print the parsed SExpr
       case readSExpr input of
