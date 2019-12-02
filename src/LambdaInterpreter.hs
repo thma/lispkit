@@ -9,8 +9,11 @@ type Environment = [(String, LTerm)]
 
 newtype EvalError = EvalError String deriving Show
 
-eval :: (MonadError EvalError m) => LTerm -> Environment -> m LTerm
+type EvalErrorMonad = Either EvalError
+
+--eval :: (MonadError EvalError m) => LTerm -> Environment -> m LTerm
+eval :: LTerm -> Environment -> EvalErrorMonad LTerm
 eval num@(LInt _) _   = return num
 eval bool@(LBool _) _ = return bool
 
-eval term _ = throwError (EvalError $ "can't evaluate " ++ (show term))
+eval term _ = throwError (EvalError $ "can't evaluate " ++ show term)
