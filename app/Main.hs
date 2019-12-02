@@ -70,8 +70,8 @@ repLoop env = do
       case compileToLambda input of
         Right term -> do
           print term
-          result <- L.eval term []
-          print result
+          catchError (print $ L.eval term []) return
+
         Left  err  -> print err
       -- print the parsed SExpr
       case readSExpr input of
@@ -94,4 +94,4 @@ main = do
   repLoop [("it", SAtom "welcome to lispkit")]
 
 
--- trapError action = catchError action (return . show)
+trapError action = catchError action (return . show)
