@@ -6,7 +6,7 @@ import           System.Environment
 import           System.IO            (hFlush, hSetEncoding, stdin, stdout, utf8)
 import           LispkitInterpreter
 import           LispkitParser
-import           LambdaCompiler       (compileToLambda)
+import           LambdaCompiler       (compileToLambda, compileEnv)
 import qualified LambdaInterpreter as L
 
 
@@ -70,7 +70,7 @@ repLoop env = do
       case compileToLambda input of
         Right term -> do
           print term
-          print (L.eval term []) --`catchError ` (return . return ())
+          print (L.eval term $ compileEnv env) --`catchError ` (return . return ())
         Left  err  -> print err
       -- print the parsed SExpr
       case readSExpr input of

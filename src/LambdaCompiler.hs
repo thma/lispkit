@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 module LambdaCompiler
     ( compileToLambda
+    , compileEnv
     , parseTerm
     , CompileError(..)
     , LTerm (..)
@@ -66,6 +67,18 @@ compileToLambda = readSExpr' >=> parseTerm
   where
     readSExpr' :: String -> Either CompileError SExpr
     readSExpr' = first (const ParseError) . readSExpr
+
+compileEnvEither :: [(String, SExpr)] -> Either CompileError [(String, LTerm)]
+compileEnvEither env =
+  let (keys, values) = unzip env
+      lterms = mapM parseTerm values :: Either CompileError [LTerm]
+   in fmap (zip keys) lterms
+
+compileEnv :: [(String, SExpr)] -> [(String, LTerm)]
+compileEnv env =
+  case compileEnvEither env of
+    Right result -> result
+    Left _       -> []
 
 test :: IO ()
 test = do
