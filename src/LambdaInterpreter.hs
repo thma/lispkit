@@ -28,11 +28,14 @@ eval (LApp (LVar "if") [test, thenPart, elsePart]) env = do
   case evalTest of
     (LBool True)  -> eval thenPart env
     (LBool False) -> eval elsePart env
-eval (LUnyPrimOp opName arg) env =
-  case unaryOp opName of
-    Just fun -> do
-                  arg' <- eval arg env
-                  return $ fun arg'
-    Nothing  -> undefined -- can not occur apply (eval op env) (SList [eval x env]) env
+eval (LUnyPrimOp opName arg) env = do
+  fun <- unyOp opName
+  fun <$> eval arg env
 
 eval term _ = throwError (EvalError $ "can't evaluate " ++ show term)
+
+unyOp :: MonadError EvalError m => String -> m UnyOp
+unyOp name = 
+  case unaryOp name of
+    Just fun -> return fun
+    Nothing  -> throwError (EvalError $ name ++ " is not a unary primitive operation")
