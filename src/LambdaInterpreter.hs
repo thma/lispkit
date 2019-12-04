@@ -2,7 +2,7 @@
 module LambdaInterpreter where
 
 import           LambdaCompiler
-import           Primops
+import           LambdaPrimops
 import           Control.Monad.Except
 import           Data.Maybe    (fromMaybe)
 
@@ -28,6 +28,11 @@ eval (LApp (LVar "if") [test, thenPart, elsePart]) env = do
   case evalTest of
     (LBool True)  -> eval thenPart env
     (LBool False) -> eval elsePart env
-
+eval (LUnyPrimOp opName arg) env =
+  case unaryOp opName of
+    Just fun -> do
+                  arg' <- eval arg env
+                  return $ fun arg'
+    Nothing  -> undefined -- can not occur apply (eval op env) (SList [eval x env]) env
 
 eval term _ = throwError (EvalError $ "can't evaluate " ++ show term)

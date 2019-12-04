@@ -20,6 +20,7 @@ data CompileError = CompileError String
 data LTerm = LInt Integer
            | LBool Bool
            | LVar String
+           | LList [LTerm]
            | LBinPrimOp String LTerm LTerm
            | LBinOp String LTerm LTerm
            | LUnyPrimOp String LTerm
