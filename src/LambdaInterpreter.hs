@@ -35,19 +35,24 @@ eval (LBinPrimOp opName arg1 arg2) env = do
   fun   <- biOp opName
   arg1' <- eval arg1 env
   arg2' <- eval arg2 env
-  return $ fun arg1' arg2'  
-  
+  return $ fun arg1' arg2'
+eval (LApp fun@(LAbs var body) [val]) env = eval body localEnv
+  where localEnv = (var, val):env
+eval (LApp fun arg) env = do 
+  fun' <- eval fun env
+  eval (LApp fun' arg) env
+
 
 eval term _ = throwError (EvalError $ "can't evaluate " ++ show term)
 
 unyOp :: MonadError EvalError m => String -> m UnyOp
-unyOp name = 
+unyOp name =
   case unaryOp name of
     Just fun -> return fun
     Nothing  -> throwError (EvalError $ name ++ " is not a unary primitive operation")
-    
+
 biOp :: MonadError EvalError m => String -> m BinOp
-biOp name = 
+biOp name =
   case binOp name of
     Just fun -> return fun
     Nothing  -> throwError (EvalError $ name ++ " is not a binary primitive operation")
