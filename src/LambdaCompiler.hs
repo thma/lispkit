@@ -41,6 +41,15 @@ parseTerm (SList [SAtom "lambda", SList vars, t]) = do
       abstractVars [SAtom var]        term = LAbs var term
       abstractVars (SAtom var : rest) term = LAbs var (abstractVars rest term)
 
+parseTerm (SList [SAtom "quote", val]) =
+  case val of
+    (SList list) -> do
+                      list' <- mapM parseTerm list
+                      return (LUnyOp "quote" (LList list'))
+    expr         -> do 
+                      expr' <- parseTerm expr
+                      return (LUnyOp "quote" expr')
+
 parseTerm (SList [SAtom fun, t1, t2]) = do
   t1' <- parseTerm t1
   t2' <- parseTerm t2
@@ -61,7 +70,6 @@ parseTerm (SList (t1:args)) = do
 
 parseTerm term = throwError $ CompileError (show term)
 
-
 -- | Compile the given lisp code to lambda terms
 compileToLambda :: String -> Either CompileError LTerm
 compileToLambda = readSExpr' >=> parseTerm
@@ -69,21 +77,14 @@ compileToLambda = readSExpr' >=> parseTerm
     readSExpr' :: String -> Either CompileError SExpr
     readSExpr' = first (const ParseError) . readSExpr
 
-compileEnvEither :: [(String, SExpr)] -> Either CompileError [(String, LTerm)]
-compileEnvEither env =
-  let (keys, values) = unzip env
-      lterms = mapM parseTerm values :: Either CompileError [LTerm]
-   in fmap (zip keys) lterms
-
 compileEnv :: [(String, SExpr)] -> [(String, LTerm)]
 compileEnv env =
   case compileEnvEither env of
     Right result -> result
     Left _       -> []
-
-test :: IO ()
-test = do
-  let expr = "(lambda (n) (+ (* n 8) m))"
-  case compileToLambda expr of
-    Right term -> print term
-    Left  err  -> print err
+  where
+    compileEnvEither :: [(String, SExpr)] -> Either CompileError [(String, LTerm)]
+    compileEnvEither env =
+      let (keys, values) = unzip env
+          lterms = mapM parseTerm values :: Either CompileError [LTerm]
+       in fmap (zip keys) lterms
