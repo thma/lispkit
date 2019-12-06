@@ -1,10 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 module LambdaPrimops where
 
-
 import           LambdaCompiler
-
-import Data.Char
+import           Data.Char
 
 type BinOp = LTerm -> LTerm -> LTerm
 type UnyOp = LTerm -> LTerm
@@ -58,10 +56,17 @@ opCar (LList (hd:_)) = hd
 opCdr :: UnyOp
 opCdr (LList (_:tl)) = LList tl
 
-isPrimOp :: String -> Bool
-isPrimOp name = 
+isBinOp :: String -> Bool
+isBinOp name = 
   case binOp name of
     Just _  -> True
-    Nothing -> case unaryOp name of
-      Just _  -> True
-      Nothing -> False
+    Nothing -> False
+    
+isUnaryOp :: String -> Bool
+isUnaryOp name = 
+  case unaryOp name of
+    Just _  -> True
+    Nothing -> False
+
+isPrimOp :: String -> Bool
+isPrimOp name = isUnaryOp name || isBinOp name
