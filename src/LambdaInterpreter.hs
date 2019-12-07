@@ -53,20 +53,17 @@ eval (LApp fun args) env = do
   fun' <- eval fun env
   apply fun' args env
 
-
 eval term _ = throwError (EvalError $ "can't evaluate " ++ show term)
-
-
 
 
 apply (LVar fun) args env =
   case unaryOp fun of
     Just op -> eval (LUnyPrimOp fun (head args)) env
     Nothing -> case binOp fun of
-                 Just op -> eval (LBinPrimOp fun (head args) (head (tail args))) env
-                 Nothing -> case lookup fun env of
-                              Just op -> eval (LApp op args) env
-                              Nothing  -> throwError (EvalError $ fun ++ " unknown function")
+       Just op -> eval (LBinPrimOp fun (head args) (head (tail args))) env
+       Nothing -> case lookup fun env of
+          Just op -> eval (LApp op args) env
+          Nothing  -> throwError (EvalError $ fun ++ " unknown function")
 
 unyOp :: MonadError EvalError m => String -> m UnyOp
 unyOp name =

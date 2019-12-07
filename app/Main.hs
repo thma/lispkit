@@ -66,7 +66,7 @@ repLoop env = do
           repLoop env
     -- normal evaluation of lisp terms
     _ -> do
-      -- compile to lambda term
+      -- compile to lambda term and evaluate
       case compileToLambda input of
         Right term -> do
           print term

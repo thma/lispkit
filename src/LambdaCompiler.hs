@@ -70,6 +70,7 @@ parseTerm (SList (t1:args)) = do
 
 parseTerm term = throwError $ CompileError (show term)
 
+
 -- | Compile the given lisp code to lambda terms
 compileToLambda :: String -> Either CompileError LTerm
 compileToLambda = readSExpr' >=> parseTerm

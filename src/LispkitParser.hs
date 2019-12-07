@@ -7,7 +7,6 @@ module LispkitParser
 import Control.Monad
 import Text.ParserCombinators.Parsec hiding (spaces)
 import qualified Text.ParserCombinators.Parsec as P
---import Text.Parsec.Token hiding (symbol)
 
 data SExpr = SAtom String
            | SList [SExpr]
@@ -16,7 +15,7 @@ data SExpr = SAtom String
            deriving (Show, Eq)
 
 symbol :: Parser Char
-symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
+symbol = oneOf "!#$%&|*+/:<=>?@^_~"
 
 spaces :: Parser ()
 spaces = skipMany1 space
@@ -28,10 +27,18 @@ parseAtom = do first <- letter <|> symbol
                return $ case atom of
                   "true"  -> SBool True
                   "false" -> SBool False
+                  "True"  -> SBool True
+                  "False" -> SBool False
                   _       -> SAtom atom
 
 parseNumber :: Parser SExpr
-parseNumber = SInt . read <$> many1 digit
+parseNumber = do
+  sign   <- many (oneOf "-")
+  digits <- many1 digit
+  case length sign of
+    0 -> return $ SInt (read digits)
+    1 -> return $ SInt (read $ "-" ++ digits)
+    --SInt . read <$> many1 digit
 
 parseSList :: Parser SExpr
 parseSList = SList <$> sepBy parseExpr spaces
