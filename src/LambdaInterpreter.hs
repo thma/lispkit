@@ -36,14 +36,28 @@ eval (LBinPrimOp opName arg1 arg2) env = do
   arg1' <- eval arg1 env
   arg2' <- eval arg2 env
   return $ fun arg1' arg2'
-eval (LApp fun@(LAbs var body) [val]) env = eval body localEnv
-  where localEnv = (var, val):env
+
+eval (LApp fun@(LAbs var body) vals) env = eval innerBody localEnv
+  where
+    vars      = getAbstractedVars fun
+    localEnv  = zip vars vals ++ env
+    innerBody = getInnermostBody body
+    
+    getAbstractedVars (LAbs var body) = var : getAbstractedVars body
+    getAbstractedVars _ = []
+    
+    getInnermostBody (LAbs var body) = getInnermostBody body
+    getInnermostBody body = body
+    
 eval (LApp fun args) env = do 
   fun' <- eval fun env
   apply fun' args env
 
 
 eval term _ = throwError (EvalError $ "can't evaluate " ++ show term)
+
+
+
 
 apply (LVar fun) args env =
   case unaryOp fun of

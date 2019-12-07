@@ -38,8 +38,8 @@ parseTerm (SList [SAtom "lambda", SList vars, t]) = do
   t' <- parseTerm t
   return $ abstractVars vars t'
     where
-      abstractVars [SAtom var]        term = LAbs var term
-      abstractVars (SAtom var : rest) term = LAbs var (abstractVars rest term)
+      abstractVars [SAtom var]      term = LAbs var term
+      abstractVars (SAtom var:rest) term = LAbs var (abstractVars rest term)
 
 parseTerm (SList [SAtom "quote", val]) =
   case val of
