@@ -4,30 +4,17 @@ module LambdaCompiler
     , compileEnv
     , parseTerm
     , CompileError(..)
-    , LTerm (..)
     ) where
 
 import Control.Monad.Except
 import Data.Bifunctor
+import LambdaTerm   (LTerm (..))
 import LispkitParser
 import Primops
 
 data CompileError = CompileError String
                   | ParseError
                     deriving Show
-
--- | 
-data LTerm = LInt Integer
-           | LBool Bool
-           | LVar String
-           | LList [LTerm]
-           | LBinPrimOp String LTerm LTerm
-           | LBinOp String LTerm LTerm
-           | LUnyPrimOp String LTerm
-           | LUnyOp String LTerm
-           | LApp LTerm [LTerm]
-           | LAbs String LTerm
-             deriving (Show, Eq)
 
 -- | parse a lambda term from a lisp symbolic expression
 parseTerm :: (MonadError CompileError m) => SExpr -> m LTerm

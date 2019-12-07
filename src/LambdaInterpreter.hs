@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 module LambdaInterpreter where
 
-import           LambdaCompiler
+import           LambdaTerm
 import           LambdaPrimops
 import           Control.Monad.Except
 import           Data.Maybe    (fromMaybe)

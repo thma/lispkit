@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module LambdaPrimops where
 
-import           LambdaCompiler
+import           LambdaTerm
 import           Data.Char
 
 type BinOp = LTerm -> LTerm -> LTerm
