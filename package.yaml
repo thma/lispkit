@@ -49,4 +49,4 @@ tests:
     - lispkit
     - hspec
     - QuickCheck
-    - quickcheck-arbitrary-adt
+#    - quickcheck-arbitrary-adt
