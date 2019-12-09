@@ -13,8 +13,8 @@ binOp "-"    = Just $ binaryIntOp (-)
 binOp "*"    = Just $ binaryIntOp (*)
 binOp "/"    = Just $ binaryIntOp div
 binOp "%"    = Just $ binaryIntOp rem
-binOp "eq"   = Just (\(LInt x) (LInt y) -> if x == y then LBool True else LBool False)
-binOp "leq"  = Just (\(LInt x) (LInt y) -> if x <= y then LBool True else LBool False)
+binOp "eq"   = Just (\(LInt x) (LInt y) -> LBool $ x == y)
+binOp "leq"  = Just (\(LInt x) (LInt y) -> LBool $ x <= y)
 binOp "cons" = Just binOpCons
 binOp "and"  = Just (\(LBool a) (LBool b) -> if a && b then LBool True else LBool False)
 binOp "or"   = Just (\(LBool a) (LBool b) -> if a || b then LBool True else LBool False)
