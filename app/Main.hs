@@ -8,6 +8,7 @@ import           LispkitInterpreter
 import           LispkitParser
 import           LambdaCompiler       (compileToLambda, compileEnv)
 import qualified LambdaInterpreter as L
+import qualified LambdaTerm as LT
 
 
 flushStr :: String -> IO()
@@ -70,7 +71,11 @@ repLoop env = do
       case compileToLambda input of
         Right term -> do
           print term
-          print (L.eval term $ compileEnv env) --`catchError ` (return . return ())
+          let result = L.eval term $ compileEnv env
+          print result
+          case result of
+            Right term -> putStrLn $ LT.toString term
+            Left  err  -> print err
         Left  err  -> print err
       -- print the parsed SExpr
       case readSExpr input of
