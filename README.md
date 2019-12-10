@@ -1,4 +1,5 @@
-[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fthma%2Flispkit%2Fbadge&style=for-the-badge)](https://actions-badge.atrox.dev/thma/lispkit/goto)
+[![Actions Status](https://github.com/thma/lispkit/workflows/Haskell%20CI/badge.svg)](https://github.com/thma/lispkit/actions)
+
 # lispkit
 Implementing a small functional language with a combinator graph reduction engine
 
