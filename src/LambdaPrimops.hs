@@ -37,14 +37,12 @@ unaryOp "cddr" = Just $ opCdr . opCdr
 unaryOp "sq"   = Just (\(LInt i) -> LInt (i * i))
 unaryOp "odd"  = Just (\(LInt i) -> LBool (rem i 2 /= 0))
 unaryOp "even" = Just (\(LInt i) -> LBool (rem i 2 == 0))
-unaryOp "atom" = Just (\case
-                         (LInt _)  -> LBool True
-                         (LBool _) -> LBool True
-                         (LVar _)  -> LBool True                         
-                         _         -> LBool False)
-unaryOp "null" = Just (\case
-                         (LList []) -> LBool True
-                         _          -> LBool False)
+unaryOp "atom" = Just (\case (LInt _)   -> LBool True
+                             (LBool _)  -> LBool True
+                             (LVar _)   -> LBool True                         
+                             _          -> LBool False)
+unaryOp "null" = Just (\case (LList []) -> LBool True
+                             _          -> LBool False)
 unaryOp "not"  = Just (\(LBool x) -> LBool (not x))
 unaryOp "chr"  = Just (\(LInt i)  -> LVar [chr (fromInteger i)])
 unaryOp "explode" = Just (\(LVar atom) -> LList $ map (\c -> LVar [c]) atom)

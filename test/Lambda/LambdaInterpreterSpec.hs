@@ -68,3 +68,5 @@ spec =
       readEval "((lambda (n m) (+ n m)) 7 8)" [] === LInt 15
     it "can apply primitive operations to arguments" $
       readEval "((car '(+ -)) 7 8)" [] === LInt 15
+--    it "can quote deep structures" $
+--      readEval "(lambda (m n) (+ n m))" [] === LList [LVar "lambda",LList [LVar "m",LVar "n"],LList [LVar "+",LVar "n",LVar "m"]]

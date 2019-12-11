@@ -30,9 +30,9 @@ parseTerm (SList [SAtom "lambda", SList vars, t]) = do
 
 parseTerm (SList [SAtom "quote", val]) =
   case val of
-    (SList list) -> do
-                      list' <- mapM parseTerm list
-                      return (LUnyOp "quote" (LList list'))
+    list@(SList _) -> do
+                      let list' = convertList list 
+                      return (LUnyOp "quote" list')
     expr         -> do 
                       expr' <- parseTerm expr
                       return (LUnyOp "quote" expr')
@@ -57,6 +57,10 @@ parseTerm (SList (t1:args)) = do
 
 parseTerm term = throwError $ CompileError (show term)
 
+convertList (SList list) = LList (map convertList list)
+convertList (SAtom v) = LVar v
+convertList (SInt n)  = LInt n
+convertList (SBool b) = LBool b
 
 -- | Compile the given lisp code to lambda terms
 compileToLambda :: String -> Either CompileError LTerm

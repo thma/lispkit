@@ -52,6 +52,8 @@ eval (LApp fun@(LAbs var body) vals) env = eval innerBody localEnv
 eval (LApp fun args) env = do 
   fun' <- eval fun env
   apply fun' args env
+  
+--eval list@(LList _) env =
 
 eval term _ = throwError (EvalError $ "can't evaluate " ++ show term)
 
