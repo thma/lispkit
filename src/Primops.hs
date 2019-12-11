@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Primops where
 
-import LispkitParser (SExpr (..))
+import LispkitParser (SExpr (..), toString)
 import Data.Char
 
 type BinOp = SExpr -> SExpr -> SExpr
@@ -46,6 +46,7 @@ unaryOp "null" = Just (\case
 unaryOp "not"  = Just (\(SBool x) -> SBool (not x))
 unaryOp "chr"  = Just (\(SInt i)  -> SAtom [chr (fromInteger i)])
 unaryOp "explode" = Just (\(SAtom atom) -> SList $ map (\c -> SAtom [c]) atom)
+unaryOp "implode" = Just (\(SList list) -> SAtom  $ concatMap toString list)
 unaryOp _      = Nothing
 
 opCar :: UnyOp

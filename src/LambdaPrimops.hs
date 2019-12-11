@@ -45,7 +45,8 @@ unaryOp "null" = Just (\case (LList []) -> LBool True
                              _          -> LBool False)
 unaryOp "not"  = Just (\(LBool x) -> LBool (not x))
 unaryOp "chr"  = Just (\(LInt i)  -> LVar [chr (fromInteger i)])
-unaryOp "explode" = Just (\(LVar atom) -> LList $ map (\c -> LVar [c]) atom)
+unaryOp "explode" = Just (\(LVar atom)  -> LList $ map (\c -> LVar [c]) atom)
+unaryOp "implode" = Just (\(LList list) -> LVar  $ concatMap toString list)
 unaryOp _      = Nothing
 
 opCar :: UnyOp
