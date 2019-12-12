@@ -9,10 +9,7 @@ import           LambdaCompiler (parseTerm)
 
 type Environment = [(String, LTerm)]
 
-type EvalErrorMonad = Either CompileError
-
 eval :: (MonadError CompileError m) => LTerm -> Environment -> m LTerm
---eval :: LTerm -> Environment -> EvalErrorMonad LTerm
 eval num@(LInt _) _   = return num
 eval bool@(LBool _) _ = return bool
 eval exp@(LVar name) env = case lookup name env of
