@@ -18,11 +18,23 @@ data LTerm = LInt Integer
            | LUnyOp String LTerm
            | LApp LTerm [LTerm]
            | LAbs String LTerm
-             deriving (Generic, Show, Eq)
+             deriving (Generic, Eq)
+
+instance Show LTerm where
+  show (LInt i) = "LInt " ++ show i
+  show (LBool b) = "LBool " ++ show b
+  show (LVar v) = "LVar " ++ show v
+  show (LList list) = "LList " ++ show list
+  show (LBinPrimOp op t1 t2) = "LBinPrimOp " ++ op ++ " (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
+  show (LBinOp op t1 t2) = "LBinOp " ++ op ++ " (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
+  show (LUnyPrimOp op t1) = "LUnyPrimOp " ++ op ++ " (" ++ show t1 ++ ")"
+  show (LUnyOp op t1) = "LUnyOp " ++ op ++ " (" ++ show t1 ++ ")"
+  show (LApp t1 t2) = "LApp (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
+  show (LAbs var term) = "LAbs " ++ var ++ " (" ++ show term ++ ")"
 
 data CompileError = CompileError String
                   | EvalError String
-                  | ParseError                  
+                  | ParseError
                     deriving (Show)
 
 
