@@ -17,40 +17,38 @@ data CompileError = CompileError String
                     deriving Show
 
 -- | parse a lambda term from a lisp symbolic expression
-parseTerm :: (MonadError CompileError m) => SExpr -> m LTerm
-parseTerm (SAtom v) = return $ LVar v
-parseTerm (SInt n)  = return $ LInt n
-parseTerm (SBool b) = return $ LBool b
-parseTerm (SList [SAtom "lambda", SList vars, t]) = do
+parseTerm :: (MonadError CompileError m) => LTerm -> m LTerm
+parseTerm (LVar v) = return $ LVar v
+parseTerm (LInt n)  = return $ LInt n
+parseTerm (LBool b) = return $ LBool b
+parseTerm (LList [LVar "lambda", LList vars, t]) = do
   t' <- parseTerm t
   return $ abstractVars vars t'
     where
-      abstractVars [SAtom var]      term = LAbs var term
-      abstractVars (SAtom var:rest) term = LAbs var (abstractVars rest term)
+      abstractVars [LVar var]      term = LAbs var term
+      abstractVars (LVar var:rest) term = LAbs var (abstractVars rest term)
 
-parseTerm (SList [SAtom "quote", val]) =
+parseTerm (LList [LVar "quote", val]) =
   case val of
-    list@(SList _) -> do
-                      list' <- preTranslate list
-                      return (LUnyOp "quote" list')
-    expr         -> do 
-                      expr' <- parseTerm expr
-                      return (LUnyOp "quote" expr')
+    l@(LList _) -> return (LUnyOp "quote" li
+    expr        -> do 
+                     expr' <- parseTerm expr
+                     return (LUnyOp "quote" expr')
 
-parseTerm (SList [SAtom fun, t1, t2]) = do
+parseTerm (LList [LVar fun, t1, t2]) = do
   t1' <- parseTerm t1
   t2' <- parseTerm t2
   case binOp fun of
     Just op -> return $ LBinPrimOp fun t1' t2'
     Nothing -> return $ LBinOp fun t1' t2'
 
-parseTerm (SList [SAtom fun, t1]) = do
+parseTerm (LList [LVar fun, t1]) = do
   t1' <- parseTerm t1
   case unaryOp fun of
     Just op -> return $ LUnyPrimOp fun t1'
     Nothing -> return $ LUnyOp fun t1'
 
-parseTerm (SList (t1:args)) = do
+parseTerm (LList (t1:args)) = do
   t1' <- parseTerm t1
   args' <- mapM parseTerm args
   return $ LApp t1' args'
@@ -67,7 +65,7 @@ preTranslate (SList list) = do
 
 -- | Compile the given lisp code to lambda terms
 compileToLambda :: String -> Either CompileError LTerm
-compileToLambda = readSExpr' >=> parseTerm
+compileToLambda = readSExpr' >=> preTranslate >=> parseTerm
   where
     readSExpr' :: String -> Either CompileError SExpr
     readSExpr' = first (const ParseError) . readSExpr
@@ -81,5 +79,5 @@ compileEnv env =
     compileEnvEither :: [(String, SExpr)] -> Either CompileError [(String, LTerm)]
     compileEnvEither env =
       let (keys, values) = unzip env
-          lterms = mapM parseTerm values :: Either CompileError [LTerm]
+          lterms = mapM (preTranslate >=> parseTerm) values :: Either CompileError [LTerm]
        in fmap (zip keys) lterms
