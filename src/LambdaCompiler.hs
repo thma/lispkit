@@ -30,7 +30,7 @@ parseTerm (LList [LVar "lambda", LList vars, t]) = do
 
 parseTerm (LList [LVar "quote", val]) =
   case val of
-    l@(LList _) -> return (LUnyOp "quote" li
+    l@(LList _) -> return (LUnyOp "quote" l)
     expr        -> do 
                      expr' <- parseTerm expr
                      return (LUnyOp "quote" expr')
@@ -55,6 +55,7 @@ parseTerm (LList (t1:args)) = do
 
 parseTerm term = throwError $ CompileError (show term)
 
+-- | translate a Lisp Symbolic Expression to a LambdaTerm.
 preTranslate :: (MonadError CompileError m) => SExpr -> m LTerm
 preTranslate (SAtom v)    = return $ LVar v
 preTranslate (SInt n)     = return $ LInt n
