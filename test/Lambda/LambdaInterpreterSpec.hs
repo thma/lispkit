@@ -51,9 +51,9 @@ spec =
     it "can compute remainders" $ readEval "(% 22 7)" [] === LInt 1 .&&. readEval "(% 21 7)" [] === LInt 0
     it "can test equality" $ readEval "(eq 100 5)" [] === LBool False .&&. readEval "(eq 79 79)" [] === LBool True
     it "can compare ints" $
-      readEval "(leq 99 10)" [] === LBool False .&&. readEval "(leq 79 79)" [] === LBool True .&&.
-      readEval "(leq 19 79)" [] ===
-      LBool True
+      readEval "(leq 99 10)" [] === LBool False .&&. 
+      readEval "(leq 79 79)" [] === LBool True .&&.
+      readEval "(leq 19 79)" [] === LBool True
     it "can conjoin booleans" $
       property $ \b1 b2 -> readEval ("(and " ++ show b1 ++ " " ++ show b2 ++ ")") [] === LBool (b1 && b2)
     it "can disjoin booleans" $
@@ -70,3 +70,5 @@ spec =
       readEval "((car '(+ -)) 7 8)" [] === LInt 15
     it "can quote deep structures" $
       readEval "'(lambda (m n) (+ n m))" [] === LList [LVar "lambda",LList [LVar "m",LVar "n"],LList [LVar "+",LVar "n",LVar "m"]]
+--    it "can evaluate constructed pieces of code" $
+--      readEval "((cons 'lambda '((n m) (+ n m))) 7 8)" [] === LInt 15

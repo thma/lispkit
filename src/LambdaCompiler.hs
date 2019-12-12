@@ -8,13 +8,11 @@ module LambdaCompiler
 
 import Control.Monad.Except
 import Data.Bifunctor
-import LambdaTerm   (LTerm (..))
+import LambdaTerm   (LTerm (..), CompileError (..))
 import LispkitParser
 import Primops
 
-data CompileError = CompileError String
-                  | ParseError
-                    deriving Show
+
 
 -- | parse a lambda term from a lisp symbolic expression
 parseTerm :: (MonadError CompileError m) => LTerm -> m LTerm

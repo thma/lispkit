@@ -5,15 +5,14 @@ import           LambdaTerm
 import           LambdaPrimops
 import           Control.Monad.Except
 import           Data.Maybe    (fromMaybe)
+import           LambdaCompiler (parseTerm)
 
 type Environment = [(String, LTerm)]
 
-newtype EvalError = EvalError String deriving Show
+type EvalErrorMonad = Either CompileError
 
-type EvalErrorMonad = Either EvalError
-
---eval :: (MonadError EvalError m) => LTerm -> Environment -> m LTerm
-eval :: LTerm -> Environment -> EvalErrorMonad LTerm
+eval :: (MonadError CompileError m) => LTerm -> Environment -> m LTerm
+--eval :: LTerm -> Environment -> EvalErrorMonad LTerm
 eval num@(LInt _) _   = return num
 eval bool@(LBool _) _ = return bool
 eval exp@(LVar name) env = case lookup name env of
@@ -53,7 +52,9 @@ eval (LApp fun args) env = do
   fun' <- eval fun env
   apply fun' args env
   
---eval list@(LList _) env =
+eval list@(LList _) env = do
+  term <- parseTerm list
+  eval term env
 
 eval term _ = throwError (EvalError $ "can't evaluate " ++ show term)
 
@@ -66,14 +67,18 @@ apply (LVar fun) args env =
        Nothing -> case lookup fun env of
           Just op -> eval (LApp op args) env
           Nothing  -> throwError (EvalError $ fun ++ " unknown function")
+apply fun@(LList _) args env = do
+  fun' <- parseTerm fun
+  apply fun' args env
 
-unyOp :: MonadError EvalError m => String -> m UnyOp
+
+unyOp :: MonadError CompileError m => String -> m UnyOp
 unyOp name =
   case unaryOp name of
     Just fun -> return fun
     Nothing  -> throwError (EvalError $ name ++ " is not a unary primitive operation")
 
-biOp :: MonadError EvalError m => String -> m BinOp
+biOp :: MonadError CompileError m => String -> m BinOp
 biOp name =
   case binOp name of
     Just fun -> return fun

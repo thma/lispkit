@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 module LambdaTerm 
   ( LTerm (..)
+  , CompileError (..)
   , toString
   ) where
   
@@ -18,6 +19,12 @@ data LTerm = LInt Integer
            | LApp LTerm [LTerm]
            | LAbs String LTerm
              deriving (Generic, Show, Eq)
+
+data CompileError = CompileError String
+                  | EvalError String
+                  | ParseError                  
+                    deriving (Show)
+
 
 toString :: LTerm -> String
 toString (LVar str) = str
