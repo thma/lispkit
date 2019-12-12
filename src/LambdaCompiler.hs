@@ -31,7 +31,7 @@ parseTerm (SList [SAtom "lambda", SList vars, t]) = do
 parseTerm (SList [SAtom "quote", val]) =
   case val of
     list@(SList _) -> do
-                      let list' = convertList list 
+                      list' <- preTranslate list
                       return (LUnyOp "quote" list')
     expr         -> do 
                       expr' <- parseTerm expr
@@ -57,10 +57,13 @@ parseTerm (SList (t1:args)) = do
 
 parseTerm term = throwError $ CompileError (show term)
 
-convertList (SList list) = LList (map convertList list)
-convertList (SAtom v) = LVar v
-convertList (SInt n)  = LInt n
-convertList (SBool b) = LBool b
+preTranslate :: (MonadError CompileError m) => SExpr -> m LTerm
+preTranslate (SAtom v)    = return $ LVar v
+preTranslate (SInt n)     = return $ LInt n
+preTranslate (SBool b)    = return $ LBool b
+preTranslate (SList list) = do
+  l <- mapM preTranslate list
+  return $ LList l
 
 -- | Compile the given lisp code to lambda terms
 compileToLambda :: String -> Either CompileError LTerm
