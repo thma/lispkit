@@ -46,7 +46,7 @@ instance Show LTerm where
   show (LBinOp op t1 t2)       = "LBinOp " ++ op ++ " (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
   show (LUnyPrimOp op _ t1)    = "LUnyPrimOp " ++ op ++ " (" ++ show t1 ++ ")"
   show (LUnyOp op t1)  = "LUnyOp " ++ op ++ " (" ++ show t1 ++ ")"
-  show (LApp t1 t2)    = "LApp (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
+  show (LApp t1 t2)    = "LApp (" ++ show t1 ++ ") " ++ show t2
   show (LAbs var term) = "LAbs " ++ var ++ " (" ++ show term ++ ")"
 
 data LispkitError = CompileError String
