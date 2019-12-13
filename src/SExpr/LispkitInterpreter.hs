@@ -1,9 +1,9 @@
-module LispkitInterpreter where
+module SExpr.LispkitInterpreter where
 
 import           Data.Char
 import           Data.Maybe    (fromMaybe)
-import           LispkitParser
-import           Primops
+import           SExpr.LispkitParser
+import           SExpr.Primops
 
 type Environment = [(String, SExpr)]
 

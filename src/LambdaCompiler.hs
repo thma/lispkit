@@ -8,7 +8,7 @@ module LambdaCompiler
 import Control.Monad.Except
 import Data.Bifunctor
 import LambdaTerm   (LTerm (..), LispkitError (..), BinOp, UnyOp)
-import LispkitParser (readSExpr, SExpr (..))
+import SExpr.LispkitParser (readSExpr, SExpr (..))
 import LambdaPrimops
 
 -- | parse a lambda term from a lisp symbolic expression

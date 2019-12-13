@@ -1,14 +1,11 @@
-module Main where
+module SExpr.Repl where
 
 import           Control.Monad
 import           Control.Monad.Except
 import           System.Environment
 import           System.IO            (hFlush, hSetEncoding, stdin, stdout, utf8)
---import           SExpr.LispkitParser
-import           LambdaCompiler       (compileToLambda, compileEnv)
-import           LambdaInterpreter
-import           LambdaTerm
-
+import           SExpr.LispkitInterpreter
+import           SExpr.LispkitParser
 
 flushStr :: String -> IO()
 flushStr str = putStr str >> hFlush stdout
@@ -16,19 +13,18 @@ flushStr str = putStr str >> hFlush stdout
 readPrompt :: String -> IO String
 readPrompt prompt = flushStr prompt >> getLine
 
-evalFile :: Environment -> FilePath -> IO LTerm
+evalString :: Environment -> String -> IO SExpr
+evalString env expr = return $
+  case readSExpr expr of
+    Right x  -> eval x env
+    Left err -> SAtom $ show err
+
+evalFile :: Environment -> FilePath -> IO SExpr
 evalFile env file = do
   putStrLn $ "loading " ++ file ++ "..."
   input <- readFile file
   evalString env input
 
-evalString :: Environment -> String -> IO LTerm
-evalString env input = return $
-  case compileToLambda input of
-   Right term -> case eval term env of
-     Right result -> result
-     Left err       -> LVar $ show err
-   Left  err      -> LVar $ show err
 
 repLoop :: Environment -> IO ()
 repLoop env = do
@@ -43,13 +39,12 @@ repLoop env = do
     (':':'l':' ':file) -> do
       result <- evalFile env file
       putStrLn $ toString result
-      repLoop $ ("_lastfile", LVar file) : ("it", result) : env
+      repLoop $ ("_lastfile", SAtom file) : ("it", result) : env
     -- define a global value
-    ('(':'d':'e':'f':'i':'n':'e':' ':nameVal)
+    ('(':'d':'e':'f':'i':'n':'e':' ':nameVal) -> do
     --(':':'d':' ':nameVal) -> do
-     -> do
       let (name, value) = separateNameAndValue nameVal
-      case compileToLambda value of
+      case readSExpr value of
         Right result -> do
           putStrLn $ "(define " ++ name ++ " " ++ toString result ++ ")"
           repLoop $ (name, result) : env
@@ -59,7 +54,7 @@ repLoop env = do
     -- reload last file
     ":r" ->
       case lookup "_lastfile" env of
-        Just (LVar file) -> do
+        Just (SAtom file) -> do
           result <- evalFile env file
           putStrLn $ toString result
           repLoop $ ("it", result) : env
@@ -67,29 +62,26 @@ repLoop env = do
           putStrLn "use :l to load a file first"
           repLoop env
     -- normal evaluation of lisp terms
-    _ -> case compileToLambda input of
-        Right term -> do
-          print term
-          let result = eval term env
-          print result
-          case result of
-            Right term -> do
-              putStrLn $ toString term
-              repLoop $ ("it", term) : env -- :: IO ()
-            Left err -> print err
+    _ -> do
+      -- print the parsed SExpr
+      case readSExpr input of
+        Right x  -> print x
         Left err -> print err
-
-
+      -- eval the SExpr
+      result <- evalString env input
+      putStrLn $ toString result
+      repLoop $ ("it", result) : env :: IO ()
 
 separateNameAndValue str =
   let name  = (head . words) str
       value = drop (1 + length name) str
    in (name, value)
 
-main = do
+repl = do
   hSetEncoding stdin utf8
   hSetEncoding stdout utf8
-  putStrLn "Welcome to lispkit"
-  repLoop []
+  putStrLn "Welcome to lispkit (simple SExpr evaluator)"
+  repLoop [("it", SAtom "welcome to lispkit")]
+
 
 

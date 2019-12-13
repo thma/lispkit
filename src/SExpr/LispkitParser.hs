@@ -1,4 +1,4 @@
-module LispkitParser
+module SExpr.LispkitParser
     ( readSExpr
     , SExpr(..)
     , toString

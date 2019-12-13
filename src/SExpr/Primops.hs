@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
-module Primops where
+module SExpr.Primops where
 
-import LispkitParser (SExpr (..), toString)
+import SExpr.LispkitParser (SExpr (..), toString)
 import Data.Char
 
 type BinOp = SExpr -> SExpr -> SExpr
