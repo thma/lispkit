@@ -4,9 +4,6 @@ module LambdaPrimops where
 import           LambdaTerm
 import           Data.Char
 
-type BinOp = LTerm -> LTerm -> LTerm
-type UnyOp = LTerm -> LTerm
-
 binOp :: String -> Maybe BinOp
 binOp "+"    = Just $ binaryIntOp (+)
 binOp "-"    = Just $ binaryIntOp (-)

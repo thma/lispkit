@@ -3,20 +3,17 @@ module LambdaCompiler
     ( compileToLambda
     , compileEnv
     , parseTerm
-    , CompileError(..)
     ) where
 
 import Control.Monad.Except
 import Data.Bifunctor
-import LambdaTerm   (LTerm (..), CompileError (..))
-import LispkitParser
-import Primops
-
-
+import LambdaTerm   (LTerm (..), LispkitError (..), BinOp, UnyOp)
+import LispkitParser (readSExpr, SExpr (..))
+import LambdaPrimops
 
 -- | parse a lambda term from a lisp symbolic expression
-parseTerm :: (MonadError CompileError m) => LTerm -> m LTerm
-parseTerm (LVar v) = return $ LVar v
+parseTerm :: (MonadError LispkitError m) => LTerm -> m LTerm
+parseTerm (LVar v)  = return $ LVar v
 parseTerm (LInt n)  = return $ LInt n
 parseTerm (LBool b) = return $ LBool b
 parseTerm (LList [LVar "lambda", LList vars, t]) = do
@@ -37,13 +34,13 @@ parseTerm (LList [LVar fun, t1, t2]) = do
   t1' <- parseTerm t1
   t2' <- parseTerm t2
   case binOp fun of
-    Just op -> return $ LBinPrimOp fun t1' t2'
+    Just op -> return $ LBinPrimOp fun op t1' t2'
     Nothing -> return $ LBinOp fun t1' t2'
 
 parseTerm (LList [LVar fun, t1]) = do
   t1' <- parseTerm t1
   case unaryOp fun of
-    Just op -> return $ LUnyPrimOp fun t1'
+    Just op -> return $ LUnyPrimOp fun op t1'
     Nothing -> return $ LUnyOp fun t1'
 
 parseTerm (LList (t1:args)) = do
@@ -54,7 +51,7 @@ parseTerm (LList (t1:args)) = do
 parseTerm term = throwError $ CompileError (show term)
 
 -- | translate a Lisp Symbolic Expression to a LambdaTerm.
-preTranslate :: (MonadError CompileError m) => SExpr -> m LTerm
+preTranslate :: (MonadError LispkitError m) => SExpr -> m LTerm
 preTranslate (SAtom v)    = return $ LVar v
 preTranslate (SInt n)     = return $ LInt n
 preTranslate (SBool b)    = return $ LBool b
@@ -63,10 +60,10 @@ preTranslate (SList list) = do
   return $ LList l
 
 -- | Compile the given lisp code to lambda terms
-compileToLambda :: String -> Either CompileError LTerm
+compileToLambda :: String -> Either LispkitError LTerm
 compileToLambda = readSExpr' >=> preTranslate >=> parseTerm
   where
-    readSExpr' :: String -> Either CompileError SExpr
+    readSExpr' :: String -> Either LispkitError SExpr
     readSExpr' = first (const ParseError) . readSExpr
 
 compileEnv :: [(String, SExpr)] -> [(String, LTerm)]
@@ -75,8 +72,8 @@ compileEnv env =
     Right result -> result
     Left _       -> []
   where
-    compileEnvEither :: [(String, SExpr)] -> Either CompileError [(String, LTerm)]
+    compileEnvEither :: [(String, SExpr)] -> Either LispkitError [(String, LTerm)]
     compileEnvEither env =
       let (keys, values) = unzip env
-          lterms = mapM (preTranslate >=> parseTerm) values :: Either CompileError [LTerm]
+          lterms = mapM (preTranslate >=> parseTerm) values :: Either LispkitError [LTerm]
        in fmap (zip keys) lterms
