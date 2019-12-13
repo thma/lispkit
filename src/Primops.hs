@@ -18,7 +18,7 @@ binOp "leq"  = Just (\(SInt x) (SInt y) -> if x <= y then SBool True else SBool 
 binOp "cons" = Just binOpCons
 binOp "and"  = Just (\(SBool a) (SBool b) -> if a && b then SBool True else SBool False)
 binOp "or"   = Just (\(SBool a) (SBool b) -> if a || b then SBool True else SBool False)
-binOp _   = Nothing
+binOp _      = Nothing
 
 binaryIntOp :: (Integer -> Integer -> Integer) -> BinOp
 binaryIntOp op (SInt x) (SInt y) = SInt (x `op` y)
@@ -45,9 +45,9 @@ unaryOp "null" = Just (\case
                          _ -> SBool False)
 unaryOp "not"  = Just (\(SBool x) -> SBool (not x))
 unaryOp "chr"  = Just (\(SInt i)  -> SAtom [chr (fromInteger i)])
-unaryOp "explode" = Just (\(SAtom atom) -> SList $ map (\c -> SAtom [c]) atom)
+unaryOp "explode" = Just (\(SAtom atom) -> SList  $ map (\c -> SAtom [c]) atom)
 unaryOp "implode" = Just (\(SList list) -> SAtom  $ concatMap toString list)
-unaryOp _      = Nothing
+unaryOp _         = Nothing
 
 opCar :: UnyOp
 opCar (SList (hd:_)) = hd

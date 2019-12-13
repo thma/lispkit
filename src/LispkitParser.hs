@@ -81,13 +81,13 @@ parseDecimalNumber = do
   _ <- try (many (string "#d"))
   sign <- many (oneOf "-")
   num <- many1 digit
-  if (length sign) > 1
+  if length sign > 1
      then pzero
      else return $ (SInt . read) $ sign ++ num
 
 
 parseSList :: Parser SExpr
-parseSList = liftM SList $ sepBy parseExpr whiteSpace
+parseSList = SList <$> sepBy parseExpr whiteSpace
 
 parseQuoted :: Parser SExpr
 parseQuoted = do

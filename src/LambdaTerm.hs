@@ -38,15 +38,15 @@ instance Eq LTerm where
   
   
 instance Show LTerm where
-  show (LInt i) = "LInt " ++ show i
+  show (LInt i)  = "LInt "  ++ show i
   show (LBool b) = "LBool " ++ show b
-  show (LVar v) = "LVar " ++ show v
-  show (LList list) = "LList " ++ show list
+  show (LVar v)  = "LVar "  ++ show v
+  show (LList l) = "LList " ++ show l
   show (LBinPrimOp op _ t1 t2) = "LBinPrimOp " ++ op ++ " (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
-  show (LBinOp op t1 t2) = "LBinOp " ++ op ++ " (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
-  show (LUnyPrimOp op _ t1) = "LUnyPrimOp " ++ op ++ " (" ++ show t1 ++ ")"
-  show (LUnyOp op t1) = "LUnyOp " ++ op ++ " (" ++ show t1 ++ ")"
-  show (LApp t1 t2) = "LApp (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
+  show (LBinOp op t1 t2)       = "LBinOp " ++ op ++ " (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
+  show (LUnyPrimOp op _ t1)    = "LUnyPrimOp " ++ op ++ " (" ++ show t1 ++ ")"
+  show (LUnyOp op t1)  = "LUnyOp " ++ op ++ " (" ++ show t1 ++ ")"
+  show (LApp t1 t2)    = "LApp (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
   show (LAbs var term) = "LAbs " ++ var ++ " (" ++ show term ++ ")"
 
 data LispkitError = CompileError String
@@ -65,9 +65,9 @@ toString (LBinPrimOp op _ t1 t2) = "(" ++ op ++ " " ++ toString t1 ++ " " ++ toS
 toString (LBinOp op t1 t2)       = "(" ++ op ++ " " ++ toString t1 ++ " " ++ toString t2 ++ ")"
 toString (LUnyPrimOp op _ t1) = "(" ++ op ++ " " ++ toString t1 ++ ")"
 toString (LUnyOp op t1)       = "(" ++ op ++ " " ++ toString t1 ++ ")"
-toString (LAbs var term) = "(lambda (" ++ var ++ ") " ++ toString term ++ ")"
+toString (LAbs var term)  = "(lambda (" ++ var ++ ") " ++ toString term ++ ")"
 toString (LApp fun terms) = "(" ++ toString fun ++ " " ++ render terms ++ ")"
-toString (LList list) = "(" ++ render list ++ ")"
+toString (LList list)     = "(" ++ render list ++ ")"
 
 
 render [] = ""
