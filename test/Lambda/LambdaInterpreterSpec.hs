@@ -11,6 +11,7 @@ import           Data.Char (isSpace)
 import LambdaTerm
 import LambdaCompiler
 import LambdaInterpreter
+import LambdaPrimops (binaryIntOp)
 
 -- `main` is here so that this module can be run from GHCi on its own.
 -- It is not needed for automatic spec discovery.
@@ -22,8 +23,8 @@ readEval input env =
   case compileToLambda input of
     Right term -> case eval term env of
       Right result -> result
-      Left _       -> error "don't care"
-    Left  err      -> error "don't care"
+      Left err       -> error $ show err
+    Left  err      -> error $ show err
 
 trim = dropWhileEnd isSpace . dropWhile isSpace
 
@@ -43,7 +44,7 @@ spec =
     it "does not evaluate quoted values (lists)" $
       readEval "'(test 1 2 3)" [] === LList [LVar "test", LInt 1, LInt 2, LInt 3]
     it "evaluates lambda expression to themselves" $
-      readEval "(lambda (n m) (+ n m))" [] === LAbs "n" (LAbs "m" (LBinPrimOp "+" (LVar "n") (LVar "m")))
+      readEval "(lambda (n m) (+ n m))" [] === LAbs "n" (LAbs "m" (LBinPrimOp "+" (binaryIntOp (+)) (LVar "n") (LVar "m")))
     it "can add" $ readEval "(+ 2 3)" [] === LInt 5
     it "can substract" $ readEval "(- 5 3)" [] === LInt 2
     it "can multiply" $ readEval "(* 5 3)" [] === LInt 15
@@ -70,5 +71,6 @@ spec =
       readEval "((car '(+ -)) 7 8)" [] === LInt 15
     it "can quote deep structures" $
       readEval "'(lambda (m n) (+ n m))" [] === LList [LVar "lambda",LList [LVar "m",LVar "n"],LList [LVar "+",LVar "n",LVar "m"]]
---    it "can evaluate constructed pieces of code" $
---      readEval "((cons 'lambda '((n m) (+ n m))) 7 8)" [] === LInt 15
+    it "can evaluate constructed pieces of code" $
+      readEval "((cons 'lambda '((n m) (+ n m))) 7 8)" [] === LInt 15  .&&.
+      readEval "(eval '((lambda (n) (+ n n)) 7) )" [] === LInt 14

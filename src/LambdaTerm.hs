@@ -33,6 +33,9 @@ instance Eq LTerm where
   (LUnyOp op t1)          == (LUnyOp op' t1')           = op == op' && t1 == t1'         
   (LApp t1 t2)    == (LApp t1' t2')                     = t1 == t1' && t2 == t2' 
   (LAbs var term) == (LAbs var' term')                  = var == var' && term == term'         
+  x == y = False
+  
+  
   
 instance Show LTerm where
   show (LInt i) = "LInt " ++ show i
