@@ -30,6 +30,9 @@ parseTerm (LList [LVar "quote", val]) =
                      expr' <- parseTerm expr
                      return (LUnyOp "quote" expr')
 
+parseTerm (LList [LVar "let", t1, t2]) =
+  return $ LApp (LVar "let") [t1, t2]
+
 parseTerm (LList [LVar fun, t1, t2]) = do
   t1' <- parseTerm t1
   t2' <- parseTerm t2
