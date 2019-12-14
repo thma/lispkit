@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 module LambdaCompiler
     ( compileToLambda
-    , compileEnv
     , parseTerm
     , preCompileToLambda
     ) where
@@ -83,20 +82,9 @@ compileToLambda = readSExpr' >=> preTranslate >=> parseTerm
     readSExpr' :: String -> Either LispkitError SExpr
     readSExpr' = first (const ParseError) . readSExpr
 
+-- | only useful for debugging
 preCompileToLambda :: String -> Either LispkitError LTerm
 preCompileToLambda = readSExpr' >=> preTranslate
   where
     readSExpr' :: String -> Either LispkitError SExpr
     readSExpr' = first (const ParseError) . readSExpr
-
-compileEnv :: [(String, SExpr)] -> [(String, LTerm)]
-compileEnv env =
-  case compileEnvEither env of
-    Right result -> result
-    Left _       -> []
-  where
-    compileEnvEither :: [(String, SExpr)] -> Either LispkitError [(String, LTerm)]
-    compileEnvEither env =
-      let (keys, values) = unzip env
-          lterms = mapM (preTranslate >=> parseTerm) values :: Either LispkitError [LTerm]
-       in fmap (zip keys) lterms

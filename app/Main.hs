@@ -4,8 +4,7 @@ import           Control.Monad
 import           Control.Monad.Except
 import           System.Environment
 import           System.IO            (hFlush, hSetEncoding, stdin, stdout, utf8)
---import           SExpr.LispkitParser
-import           LambdaCompiler       (compileToLambda, compileEnv, preCompileToLambda)
+import           LambdaCompiler       (compileToLambda, preCompileToLambda)
 import           LambdaInterpreter
 import           LambdaTerm
 
