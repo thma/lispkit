@@ -30,12 +30,19 @@ eval (LApp (LVar "if") [test, thenPart, elsePart]) env = do
   case evalTest of
     (LBool True)  -> eval thenPart env
     (LBool False) -> eval elsePart env
-  
+
 eval (LUnyPrimOp opName op arg) env = op <$> eval arg env
 eval (LBinPrimOp opName op arg1 arg2) env = do
   arg1' <- eval arg1 env
   arg2' <- eval arg2 env
   return $ op arg1' arg2'
+  
+eval (LUnyOp opName arg) env =
+  case lookup opName env of
+    Just fun -> do 
+      arg' <- eval arg env
+      apply fun [arg'] env
+    Nothing -> throwError (EvalError $ "undefined unary function " ++ opName)
 
 eval (LApp fun@(LAbs var body) vals) env = apply fun vals env
     
@@ -47,7 +54,7 @@ eval list@(LList _) env = do
   term <- parseTerm list
   eval term env
 
-eval term _ = throwError (EvalError $ "can't evaluate " ++ show term)
+eval term env = throwError (EvalError $ "can't evaluate " ++ show term ++ " env: " ++ show env)
 
 -- | apply function to arguments
 apply (LVar fun) args env =
