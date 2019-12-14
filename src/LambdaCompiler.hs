@@ -31,11 +31,22 @@ parseTerm (LList [LVar "quote", val]) =
                      expr' <- parseTerm expr
                      return (LUnyOp "quote" expr')
 
-parseTerm (LList [LVar "let", body, LList[LVar var,val]]) = do
-  body' <- parseTerm body
-  val'  <- parseTerm val
-  return $ LApp (LAbs var body') [val']
+parseTerm (LList (LVar "let" : body : definitions)) = do
+  let vars = getVars definitions
+      vals = getVals definitions
+      getVars [] = []
+      getVars (LList [LVar var, _] : rest) = var : getVars rest
+      getVals [] = []
+      getVals (LList [_, val] : rest) = val : getVals rest
+      createApp [] [] body = body
+      createApp (var:vars) (val:vals) body = 
+        LApp (LAbs var (createApp vars vals body)) [val]
 
+  vals' <- mapM parseTerm vals
+  body' <- parseTerm body
+  return $ createApp vars vals' body'
+
+      
 parseTerm (LList [LVar fun, t1, t2]) = do
   t1' <- parseTerm t1
   t2' <- parseTerm t2

@@ -75,8 +75,9 @@ spec =
       readEval "((cons 'lambda '((n m) (+ n m))) 7 8)" [] === LInt 15  .&&.
       readEval "(eval '((lambda (n) (+ n n)) 7) )" [] === LInt 14
     it "can handle let" $
-      readEval "(let (+ a 5) (a 7))" [] == LInt 12 -- .&&.
---      readEval "(let (+ a b) (a 7) (b 9))" [] == LInt 16 .&&.
---      readEval "(let (+ a (+ b c)) (a 7) (b 9) (c 10))" [] == LInt 26  .&&.
---      readEval "(let (+ a 10) (a 7))" [] == LInt 17 .&&.
---      readEval "(let (fac 10) (fac (lambda (n) (if (eq n 0) 1 (* n (fac (- n 1)))))))" [] == LInt 10000
+           readEval "(let (+ a 5) (a 7))" [] == LInt 12 
+      .&&. readEval "(let (* a b) (a 7) (b 10))" [] == LInt 70
+      .&&. readEval "(let (+ a b) (a 7) (b 9))" [] == LInt 16
+      .&&. readEval "(let (+ a (+ b c)) (a 7) (b 9) (c 10))" [] == LInt 26
+      .&&. readEval "(let (+ a 10) (a 7))" [] == LInt 17 
+--      .&&. readEval "(let (fac 10) (fac (lambda (n) (if (eq n 0) 1 (* n (fac (- n 1)))))))" [] == LInt 10000
