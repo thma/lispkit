@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-} -- ensure that all possible LTerms are covered in pattern matching
 module LambdaInterpreter where
 
 import           LambdaTerm
@@ -30,6 +31,7 @@ eval (LApp (LVar "if") [test, thenPart, elsePart]) env = do
   case evalTest of
     (LBool True)  -> eval thenPart env
     (LBool False) -> eval elsePart env
+    _             -> throwError (EvalError $ "tertium non datur!" ++ show evalTest)
 
 eval (LUnyPrimOp opName op arg) env = op <$> eval arg env
 eval (LBinPrimOp opName op arg1 arg2) env = do
@@ -44,6 +46,14 @@ eval (LUnyOp opName arg) env =
       apply fun [arg'] env
     Nothing -> throwError (EvalError $ "undefined unary function " ++ opName)
 
+eval (LBinOp opName arg1 arg2) env =
+  case lookup opName env of
+    Just fun -> do 
+      arg1' <- eval arg1 env
+      arg2' <- eval arg2 env
+      apply fun [arg1', arg2'] env
+    Nothing -> throwError (EvalError $ "undefined binary function " ++ opName)
+    
 eval (LApp fun@(LAbs var body) vals) env = apply fun vals env
     
 eval (LApp fun args) env = do 
@@ -54,7 +64,6 @@ eval list@(LList _) env = do
   term <- parseTerm list
   eval term env
 
-eval term env = throwError (EvalError $ "can't evaluate " ++ show term ++ " env: " ++ show env)
 
 -- | apply function to arguments
 apply (LVar fun) args env =

@@ -45,16 +45,11 @@ repLoop env = do
       repLoop $ ("_lastfile", LVar file) : ("it", result) : env
     -- define a global value
     ('(':'d':'e':'f':'i':'n':'e':' ':nameVal)
-    --(':':'d':' ':nameVal) -> do
      -> do
       let (name, value) = separateNameAndValue nameVal
-      case compileToLambda value of
-        Right result -> do
-          putStrLn $ "(define " ++ name ++ " " ++ toString result ++ ")"
-          repLoop $ (name, result) : env
-        Left err -> do
-          print err
-          repLoop env
+      result <- evalString env value
+      putStrLn $ "(define " ++ name ++ " " ++ toString result ++ ")"
+      repLoop $ (name, result) : env
     -- reload last file
     ":r" ->
       case lookup "_lastfile" env of
@@ -82,8 +77,6 @@ repLoop env = do
             Left err -> print err
         Left err -> print err
 
-
-
 separateNameAndValue str =
   let name  = (head . words) str
       value = drop (1 + length name) str
@@ -95,4 +88,6 @@ main = do
   putStrLn "Welcome to lispkit"
   repLoop []
 
-
+ack 0 m = m+1
+ack n 0 = ack (n-1) 1
+ack n m = ack (n-1) (ack n (m-1))
