@@ -5,7 +5,7 @@ import           Control.Monad.Except
 import           System.Environment
 import           System.IO            (hFlush, hSetEncoding, stdin, stdout, utf8)
 --import           SExpr.LispkitParser
-import           LambdaCompiler       (compileToLambda, compileEnv)
+import           LambdaCompiler       (compileToLambda, compileEnv, preCompileToLambda)
 import           LambdaInterpreter
 import           LambdaTerm
 
@@ -67,7 +67,11 @@ repLoop env = do
           putStrLn "use :l to load a file first"
           repLoop env
     -- normal evaluation of lisp terms
-    _ -> case compileToLambda input of
+    _ -> do
+      case preCompileToLambda input of
+        Right term -> print term
+        Left  err  -> print err
+      case compileToLambda input of
         Right term -> do
           print term
           let result = eval term env

@@ -3,6 +3,7 @@ module LambdaCompiler
     ( compileToLambda
     , compileEnv
     , parseTerm
+    , preCompileToLambda
     ) where
 
 import Control.Monad.Except
@@ -30,8 +31,10 @@ parseTerm (LList [LVar "quote", val]) =
                      expr' <- parseTerm expr
                      return (LUnyOp "quote" expr')
 
-parseTerm (LList [LVar "let", t1, t2]) =
-  return $ LApp (LVar "let") [t1, t2]
+parseTerm (LList [LVar "let", body, LList[LVar var,val]]) = do
+  body' <- parseTerm body
+  val'  <- parseTerm val
+  return $ LApp (LAbs var body') [val']
 
 parseTerm (LList [LVar fun, t1, t2]) = do
   t1' <- parseTerm t1
@@ -65,6 +68,12 @@ preTranslate (SList list) = do
 -- | Compile the given lisp code to lambda terms
 compileToLambda :: String -> Either LispkitError LTerm
 compileToLambda = readSExpr' >=> preTranslate >=> parseTerm
+  where
+    readSExpr' :: String -> Either LispkitError SExpr
+    readSExpr' = first (const ParseError) . readSExpr
+
+preCompileToLambda :: String -> Either LispkitError LTerm
+preCompileToLambda = readSExpr' >=> preTranslate
   where
     readSExpr' :: String -> Either LispkitError SExpr
     readSExpr' = first (const ParseError) . readSExpr

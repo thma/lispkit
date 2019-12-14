@@ -30,13 +30,6 @@ eval (LApp (LVar "if") [test, thenPart, elsePart]) env = do
   case evalTest of
     (LBool True)  -> eval thenPart env
     (LBool False) -> eval elsePart env
-eval (LApp (LVar "let") (expr:definitions)) env = eval expr localEnv
-  where
-    localEnv = makeEnv definitions ++ env
-    makeEnv :: [LTerm] -> Environment
-    makeEnv [] = []
-    makeEnv (LUnyOp name val:tl) = (name, val) : makeEnv tl
-    makeEnv err = error $ show err
   
 eval (LUnyPrimOp opName op arg) env = op <$> eval arg env
 eval (LBinPrimOp opName op arg1 arg2) env = do
