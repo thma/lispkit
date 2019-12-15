@@ -8,8 +8,6 @@ import           Control.Monad.Except
 import           Data.Maybe    (fromMaybe)
 import           LambdaCompiler (parseTerm)
 
-type Environment = [(String, LTerm)]
-
 {-- Classic Eval/Apply interpreter on LTerms --}
  
 -- | eval LTerm expression
@@ -25,7 +23,7 @@ eval (LUnyOp "eval" expr) env = do
   expr' <- eval expr env
   eval expr' env
 eval (LUnyOp "quote" expr) _ = return expr
-eval lambda@(LAbs v body) _  = return lambda
+eval lambda@(LAbs v body closure) _  = return lambda
 eval (LApp (LVar "if") [test, thenPart, elsePart]) env = do 
   evalTest <- eval test env
   case evalTest of
@@ -54,7 +52,7 @@ eval (LBinOp opName arg1 arg2) env =
       apply fun [arg1', arg2'] env
     Nothing -> throwError (EvalError $ "undefined binary function " ++ opName)
     
-eval (LApp fun@(LAbs var body) vals) env = apply fun vals env
+eval (LApp fun@(LAbs var body closure) vals) env = apply fun vals env
     
 eval (LApp fun args) env = do 
   fun' <- eval fun env
@@ -75,16 +73,16 @@ apply (LVar fun) args env =
           Just op -> eval (LApp op args) env
           Nothing  -> throwError (EvalError $ fun ++ " unknown function")
 
-apply fun@(LAbs var body) vals env = eval innerBody localEnv
+apply fun@(LAbs var body closure) vals env = eval innerBody (closure ++ localEnv)
   where
     vars      = getAbstractedVars fun
     localEnv  = zip vars vals ++ env
     innerBody = getInnermostBody body
     
-    getAbstractedVars (LAbs var body) = var : getAbstractedVars body
+    getAbstractedVars (LAbs var body closure) = var : getAbstractedVars body
     getAbstractedVars _ = []
     
-    getInnermostBody (LAbs var body) = getInnermostBody body
+    getInnermostBody (LAbs var body closure) = getInnermostBody body
     getInnermostBody body = body
 
 apply fun@(LList _) args env = do

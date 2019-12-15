@@ -21,8 +21,8 @@ parseTerm (LList [LVar "lambda", LList vars, t]) = do
   t' <- parseTerm t
   return $ abstractVars vars t'
     where
-      abstractVars [LVar var]      term = LAbs var term
-      abstractVars (LVar var:rest) term = LAbs var (abstractVars rest term)
+      abstractVars [LVar var]      term = LAbs var term []
+      abstractVars (LVar var:rest) term = LAbs var (abstractVars rest term) []
       abstractVars vars term = error $ "malformed lambda: " ++ show vars ++ " " ++ show term
 
 parseTerm (LList [LVar "quote", val]) =
@@ -43,7 +43,7 @@ parseTerm (LList (LVar "let" : body : definitions)) = do
       getVals _ = error $ "malformed let: vals: " ++ show definitions
       createApp [] [] body = body
       createApp (var:vars) (val:vals) body = 
-        LApp (LAbs var (createApp vars vals body)) [val]
+        LApp (LAbs var (createApp vars vals body) (zip vars vals)) [val]
       createApp vars vals _ = error $ "malformed let: vars and vals: " ++ show vars ++ " " ++ show vals
 
   vals' <- mapM parseTerm vals

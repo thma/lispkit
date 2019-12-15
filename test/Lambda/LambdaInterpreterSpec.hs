@@ -44,7 +44,7 @@ spec =
     it "does not evaluate quoted values (lists)" $
       readEval "'(test 1 2 3)" [] === LList [LVar "test", LInt 1, LInt 2, LInt 3]
     it "evaluates lambda expression to themselves" $
-      readEval "(lambda (n m) (+ n m))" [] === LAbs "n" (LAbs "m" (LBinPrimOp "+" (binaryIntOp (+)) (LVar "n") (LVar "m")))
+      readEval "(lambda (n m) (+ n m))" [] === LAbs "n" (LAbs "m" (LBinPrimOp "+" (binaryIntOp (+)) (LVar "n") (LVar "m")) []) []
     it "can add" $ readEval "(+ 2 3)" [] === LInt 5
     it "can substract" $ readEval "(- 5 3)" [] === LInt 2
     it "can multiply" $ readEval "(* 5 3)" [] === LInt 15
