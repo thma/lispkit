@@ -34,7 +34,7 @@ instance Eq LTerm where
   (LUnyPrimOp op _ t1)    == (LUnyPrimOp op' _ t1')     = op == op' && t1 == t1'  
   (LUnyOp op t1)          == (LUnyOp op' t1')           = op == op' && t1 == t1'         
   (LApp t1 t2)    == (LApp t1' t2')                     = t1 == t1' && t2 == t2' 
-  (LAbs var term env) == (LAbs var' term' env')                  = var == var' && term == term'         
+  (LAbs var term env) == (LAbs var' term' env')         = var == var' && term == term'         
   x == y = False
     
 -- | As the LTerm data type contains function elements (like LBinPrimOp) we can't use deriving (Show) but have to implement it manually      

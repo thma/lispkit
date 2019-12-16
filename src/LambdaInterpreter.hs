@@ -64,13 +64,14 @@ eval list@(LList _) env = do
 
 
 -- | apply function to arguments
+apply :: (MonadError LispkitError m) => LTerm -> [LTerm] -> Environment -> m LTerm
 apply (LVar fun) args env =
   case unaryOp fun of
     Just op -> eval (LUnyPrimOp fun op (head args)) env
     Nothing -> case binOp fun of
        Just op -> eval (LBinPrimOp fun op (head args) (head (tail args))) env
        Nothing -> case lookup fun env of
-          Just op -> eval (LApp op args) env
+          Just op  -> eval (LApp op args) env
           Nothing  -> throwError (EvalError $ fun ++ " unknown function")
 
 apply fun@(LAbs var body closure) vals env = eval innerBody (closure ++ localEnv)
