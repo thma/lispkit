@@ -25,3 +25,4 @@ stack.yaml
 stack.yaml.lock
 .idea/
 *.iml
+/out/
