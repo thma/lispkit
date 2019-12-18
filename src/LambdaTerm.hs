@@ -43,12 +43,12 @@ instance Show LTerm where
   show (LBool b) = "LBool " ++ show b
   show (LVar v)  = "LVar "  ++ show v
   show (LList l) = "LList " ++ show l
-  show (LBinPrimOp op _ t1 t2) = "LBinPrimOp " ++ op ++ " (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
-  show (LBinOp op t1 t2)       = "LBinOp " ++ op ++ " (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
-  show (LUnyPrimOp op _ t1)    = "LUnyPrimOp " ++ op ++ " (" ++ show t1 ++ ")"
-  show (LUnyOp op t1)  = "LUnyOp " ++ op ++ " (" ++ show t1 ++ ")"
+  show (LBinPrimOp op _ t1 t2) = "LBinPrimOp \"" ++ op ++ "\" (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
+  show (LBinOp op t1 t2)       = "LBinOp \"" ++ op ++ "\" (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
+  show (LUnyPrimOp op _ t1)    = "LUnyPrimOp \"" ++ op ++ "\" (" ++ show t1 ++ ")"
+  show (LUnyOp op t1)  = "LUnyOp \"" ++ op ++ "\" (" ++ show t1 ++ ")"
   show (LApp t1 t2)    = "LApp (" ++ show t1 ++ ") " ++ show t2
-  show (LAbs var term env) = "LAbs " ++ var ++ " (" ++ show term ++ ") (" ++ show env ++ ")"
+  show (LAbs var term env) = "LAbs \"" ++ var ++ "\" (" ++ show term ++ ") (" ++ show env ++ ")"
 
 data LispkitError = CompileError String
                   | EvalError String

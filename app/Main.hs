@@ -87,7 +87,3 @@ main = do
   hSetEncoding stdout utf8
   putStrLn "Welcome to lispkit"
   repLoop []
-
-ack 0 m = m+1
-ack n 0 = ack (n-1) 1
-ack n m = ack (n-1) (ack n (m-1))

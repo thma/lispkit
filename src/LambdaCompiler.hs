@@ -34,23 +34,26 @@ parseTerm (LList [LVar "quote", val]) =
 
 parseTerm (LList (LVar "let" : body : definitions)) = do
   let vars = getVars definitions
-      vals = getVals definitions
-      getVars [] = []
-      getVars (LList [LVar var, _] : rest) = var : getVars rest
-      getVars _ = error $ "malformed let: vars: " ++ show definitions
-      getVals [] = []
-      getVals (LList [_, val] : rest) = val : getVals rest
-      getVals _ = error $ "malformed let: vals: " ++ show definitions
-      createApp [] [] body = body
-      createApp (var:vars) (val:vals) body = 
-        LApp (LAbs var (createApp vars vals body) (zip vars vals)) [val]
-      createApp vars vals _ = error $ "malformed let: vars and vals: " ++ show vars ++ " " ++ show vals
-
+      vals = getVals definitions      
   vals' <- mapM parseTerm vals
   body' <- parseTerm body
   return $ createApp vars vals' body'
+  where
+    getVars :: [LTerm] -> [String]
+    getVars [] = []
+    getVars (LList [LVar var, _] : rest) = var : getVars rest
+    getVars _ = error $ "malformed let: vars: " ++ show definitions
+    
+    getVals :: [LTerm] -> [LTerm]
+    getVals [] = []
+    getVals (LList [_, val] : rest) = val : getVals rest
+    getVals _ = error $ "malformed let: vals: " ++ show definitions
+    
+    createApp :: [String] -> [LTerm] -> LTerm -> LTerm
+    createApp [] [] body = body
+    createApp (var:vars) (val:vals) body = LApp (LAbs var (createApp vars vals body) (zip (var:vars) (val:vals))) []
+    createApp vars vals _ = error $ "malformed let: vars and vals: " ++ show vars ++ " " ++ show vals
 
-      
 parseTerm (LList [LVar fun, t1, t2]) = do
   t1' <- parseTerm t1
   t2' <- parseTerm t2
