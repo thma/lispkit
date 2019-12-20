@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-} -- ensure that all possible LTerms are covered in pattern matching
 module LambdaCompiler
     ( compileToLambda
-    , parseTerm
+    , compile
     , preCompileToLambda
     ) where
 
@@ -13,30 +13,30 @@ import SExpr.LispkitParser (readSExpr, SExpr (..))
 import LambdaPrimops
 
 -- | parse a lambda term from a lisp symbolic expression
-parseTerm :: (MonadError LispkitError m) => LTerm -> m LTerm
-parseTerm (LVar v)  = return $ LVar v
-parseTerm (LInt n)  = return $ LInt n
-parseTerm (LBool b) = return $ LBool b
-parseTerm (LList [LVar "lambda", LList vars, t]) = do
-  t' <- parseTerm t
+compile :: (MonadError LispkitError m) => LTerm -> m LTerm
+compile (LVar v)  = return $ LVar v
+compile (LInt n)  = return $ LInt n
+compile (LBool b) = return $ LBool b
+compile (LList [LVar "lambda", LList vars, t]) = do
+  t' <- compile t
   return $ abstractVars vars t'
     where
       abstractVars [LVar var]      term = LAbs var term []
       abstractVars (LVar var:rest) term = LAbs var (abstractVars rest term) []
       abstractVars vars term = error $ "malformed lambda: " ++ show vars ++ " " ++ show term
 
-parseTerm (LList [LVar "quote", val]) =
+compile (LList [LVar "quote", val]) =
   case val of
     l@(LList _) -> return (LUnyOp "quote" l)
     expr        -> do 
-                     expr' <- parseTerm expr
+                     expr' <- compile expr
                      return (LUnyOp "quote" expr')
 
-parseTerm (LList (LVar "let" : body : definitions)) = do
+compile (LList (LVar "let" : body : definitions)) = do
   let vars = getVars definitions
       vals = getVals definitions      
-  vals' <- mapM parseTerm vals
-  body' <- parseTerm body
+  vals' <- mapM compile vals
+  body' <- compile body
   return $ createApp vars vals' body'
   where
     getVars :: [LTerm] -> [String]
@@ -51,28 +51,50 @@ parseTerm (LList (LVar "let" : body : definitions)) = do
     
     createApp :: [String] -> [LTerm] -> LTerm -> LTerm
     createApp [] [] body = body
-    createApp (var:vars) (val:vals) body = LApp (LAbs var (createApp vars vals body) (zip (vars) (vals))) [val]
+    createApp (var:vars) (val:vals) body = LApp (LAbs var (createApp vars vals body) (zip vars vals)) [val]
     createApp vars vals _ = error $ "malformed let: vars and vals: " ++ show vars ++ " " ++ show vals
 
-parseTerm (LList [LVar fun, t1, t2]) = do
-  t1' <- parseTerm t1
-  t2' <- parseTerm t2
+compile (LList (LVar "letrec" : body : definitions)) = do
+  let vars = getVars definitions
+      vals = getVals definitions
+  vals' <- mapM compile vals
+  body' <- compile body
+  return $ createApp vars vals' body'
+  where
+    getVars :: [LTerm] -> [String]
+    getVars [] = []
+    getVars (LList [LVar var, _] : rest) = var : getVars rest
+    getVars _ = error $ "malformed let: vars: " ++ show definitions
+
+    getVals :: [LTerm] -> [LTerm]
+    getVals [] = []
+    getVals (LList [_, val] : rest) = val : getVals rest
+    getVals _ = error $ "malformed let: vals: " ++ show definitions
+
+    createApp :: [String] -> [LTerm] -> LTerm -> LTerm
+    createApp [] [] body = body
+    createApp (var:vars) (val:vals) body = LApp (LAbs var (createApp vars vals body) (zip vars vals)) [val]
+    createApp vars vals _ = error $ "malformed let: vars and vals: " ++ show vars ++ " " ++ show vals
+
+compile (LList [LVar fun, t1, t2]) = do
+  t1' <- compile t1
+  t2' <- compile t2
   case binOp fun of
     Just op -> return $ LBinPrimOp fun op t1' t2'
     Nothing -> return $ LBinOp fun t1' t2'
 
-parseTerm (LList [LVar fun, t1]) = do
-  t1' <- parseTerm t1
+compile (LList [LVar fun, t1]) = do
+  t1' <- compile t1
   case unaryOp fun of
     Just op -> return $ LUnyPrimOp fun op t1'
     Nothing -> return $ LUnyOp fun t1'
 
-parseTerm (LList (t1:args)) = do
-  t1' <- parseTerm t1
-  args' <- mapM parseTerm args
+compile (LList (t1:args)) = do
+  t1' <- compile t1
+  args' <- mapM compile args
   return $ LApp t1' args'
 
-parseTerm term = throwError $ CompileError (show term)
+compile term = throwError $ CompileError (show term)
 
 -- | translate a Lisp Symbolic Expression to a LambdaTerm.
 preTranslate :: (MonadError LispkitError m) => SExpr -> m LTerm
@@ -85,7 +107,7 @@ preTranslate (SList list) = do
 
 -- | Compile the given lisp code to lambda terms
 compileToLambda :: String -> Either LispkitError LTerm
-compileToLambda = readSExpr' >=> preTranslate >=> parseTerm
+compileToLambda = readSExpr' >=> preTranslate >=> compile
   where
     readSExpr' :: String -> Either LispkitError SExpr
     readSExpr' = first (const ParseError) . readSExpr

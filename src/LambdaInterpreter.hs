@@ -6,7 +6,7 @@ import           LambdaTerm
 import           LambdaPrimops
 import           Control.Monad.Except
 import           Data.Maybe    (fromMaybe)
-import           LambdaCompiler (parseTerm)
+import           LambdaCompiler (compile)
 
 {-- Classic Eval/Apply interpreter on LTerms --}
  
@@ -59,7 +59,7 @@ eval (LApp fun args) env = do
   apply fun' args env
   
 eval list@(LList _) env = do
-  term <- parseTerm list
+  term <- compile list
   eval term env
 
 
@@ -77,7 +77,7 @@ apply (LVar fun) args env =
 apply fun@(LAbs var body closure) vals env = eval innerBody (closure ++ localEnv)
   where
     vars      = getAbstractedVars fun
-    localEnv  = env ++ zip vars vals 
+    localEnv  = env ++ zip vars vals
     innerBody = getInnermostBody body
     
     getAbstractedVars (LAbs var body closure) = var : getAbstractedVars body
@@ -87,7 +87,7 @@ apply fun@(LAbs var body closure) vals env = eval innerBody (closure ++ localEnv
     getInnermostBody body = body
 
 apply fun@(LList _) args env = do
-  fun' <- parseTerm fun
+  fun' <- compile fun
   apply fun' args env
 
 apply fun args _ = throwError (EvalError $ "Can't apply " ++ show fun ++ " to " ++ show args)
