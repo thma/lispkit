@@ -51,7 +51,7 @@ parseTerm (LList (LVar "let" : body : definitions)) = do
     
     createApp :: [String] -> [LTerm] -> LTerm -> LTerm
     createApp [] [] body = body
-    createApp (var:vars) (val:vals) body = LApp (LAbs var (createApp vars vals body) (zip (var:vars) (val:vals))) []
+    createApp (var:vars) (val:vals) body = LApp (LAbs var (createApp vars vals body) (zip (vars) (vals))) [val]
     createApp vars vals _ = error $ "malformed let: vars and vals: " ++ show vars ++ " " ++ show vals
 
 parseTerm (LList [LVar fun, t1, t2]) = do

@@ -12,6 +12,7 @@ Implementing a small functional language with a combinator graph reduction engin
 - compile SEpxr to lambda terms
 - build eval based on lambda terms
 - eval can throw exceptions
+- support closures with lexical / static scope
 
 ## todo list
 - write regression test suite

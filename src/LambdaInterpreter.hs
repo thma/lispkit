@@ -77,7 +77,7 @@ apply (LVar fun) args env =
 apply fun@(LAbs var body closure) vals env = eval innerBody (closure ++ localEnv)
   where
     vars      = getAbstractedVars fun
-    localEnv  = zip vars vals ++ env
+    localEnv  = env ++ zip vars vals 
     innerBody = getInnermostBody body
     
     getAbstractedVars (LAbs var body closure) = var : getAbstractedVars body
