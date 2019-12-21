@@ -54,27 +54,23 @@ compile (LList (LVar "let" : body : definitions)) = do
     createApp (var:vars) (val:vals) body = LApp (LAbs var (createApp vars vals body) (zip vars vals)) [val]
     createApp vars vals _ = error $ "malformed let: vars and vals: " ++ show vars ++ " " ++ show vals
 
-compile (LList (LVar "letrec" : body : definitions)) = do
-  let vars = getVars definitions
-      vals = getVals definitions
-  vals' <- mapM compile vals
-  body' <- compile body
-  return $ createApp vars vals' body'
-  where
-    getVars :: [LTerm] -> [String]
-    getVars [] = []
-    getVars (LList [LVar var, _] : rest) = var : getVars rest
-    getVars _ = error $ "malformed let: vars: " ++ show definitions
 
-    getVals :: [LTerm] -> [LTerm]
-    getVals [] = []
-    getVals (LList [_, val] : rest) = val : getVals rest
-    getVals _ = error $ "malformed let: vals: " ++ show definitions
-
-    createApp :: [String] -> [LTerm] -> LTerm -> LTerm
-    createApp [] [] body = body
-    createApp (var:vars) (val:vals) body = LApp (LAbs var (createApp vars vals body) (zip vars vals)) [val]
-    createApp vars vals _ = error $ "malformed let: vars and vals: " ++ show vars ++ " " ++ show vals
+{--
+;; letrec macro, example:
+;;(letrec
+;;	((even? (lambda (n) (if (zero? n) true (odd? (sub1 n)))))
+;;	 (odd? (lambda (n) (if (zero? n) false (even? (sub1 n))))))
+;;	(odd? 37))
+;; macro expands to ==>
+;;(let 
+;;  ((even? (lambda (n even? odd?) (if (zero? n) true (odd? (sub1 n) even? odd?))))
+;;   (odd? (lambda (n even? odd?) (if (zero? n) false (even? (sub1 n) even? odd?)))))
+;;  (odd? 37 even? odd?))
+;; and thus finally to ==>
+;;((lambda (even? odd?) (odd? 37 even? odd?)) 
+;;	(lambda (n even? odd?) (if (zero? n) true (odd? (sub1 n) even? odd?)))
+;;	(lambda (n even? odd?) (if (zero? n) false (even? (sub1 n) even? odd?))))   
+--}
 
 compile (LList [LVar fun, t1, t2]) = do
   t1' <- compile t1
