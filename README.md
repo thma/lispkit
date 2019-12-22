@@ -17,6 +17,6 @@ Implementing a small functional language with a combinator graph reduction engin
 
 ## todo list
 - implement letrec in lambda term evaluator 
-- compile lambda to SKI combinator
+- compile lambda to SKI combinators
 - write graph reduction for combinator graphs
 - reimplement P combinator from my ancient webLisp
