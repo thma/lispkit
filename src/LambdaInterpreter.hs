@@ -74,10 +74,10 @@ apply (LVar fun) args env =
           Just op  -> eval (LApp op args) env
           Nothing  -> throwError (EvalError $ fun ++ " unknown function")
 
-apply fun@(LAbs var body closure) vals env = eval innerBody (closure ++ localEnv)
+apply fun@(LAbs var body closure) vals env = eval innerBody (closure ++ env ++ localEnv )
   where
     vars      = getAbstractedVars fun
-    localEnv  = env ++ zip vars vals
+    localEnv  = zip vars vals
     innerBody = getInnermostBody body
     
     getAbstractedVars (LAbs var body closure) = var : getAbstractedVars body

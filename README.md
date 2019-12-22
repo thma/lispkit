@@ -13,9 +13,10 @@ Implementing a small functional language with a combinator graph reduction engin
 - build eval based on lambda terms
 - eval can throw exceptions
 - support closures with lexical / static scope
+- write regression test suite
 
 ## todo list
-- write regression test suite
+- implement letrec in lambda term evaluator 
 - compile lambda to SKI combinator
 - write graph reduction for combinator graphs
 - reimplement P combinator from my ancient webLisp
