@@ -14,4 +14,10 @@ compile (LVar v)  = return $ CFree v
 compile (LList l) = do
   list <- mapM compile l
   return $ CList list
+  
+compile (LBinPrimOp name op t1 t2) = do
+  let cOp = k
+  cT1 <- compile t1
+  cT2 <- compile t2
+  return (CBinOp name cOp cT1 cT2)
 
