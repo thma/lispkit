@@ -7,7 +7,7 @@ import           System.IO            (hFlush, hSetEncoding, stdin, stdout, utf8
 import           LambdaCompiler       (compileToLambda, preCompileToLambda)
 import           LambdaInterpreter
 import           LambdaTerm
-
+import           CombinatorCompiler   (compile)
 
 flushStr :: String -> IO()
 flushStr str = putStr str >> hFlush stdout
@@ -32,9 +32,8 @@ evalString env input = return $
 repLoop :: Environment -> IO ()
 repLoop env = do
   input <- readPrompt "> "
-  case input
+  case input of
     -- quit REPL
-        of
     ":q" -> do
       putStrLn "bye..."
       return ()
@@ -57,6 +56,9 @@ repLoop env = do
           result <- evalFile env file
           putStrLn $ toString result
           repLoop $ ("it", result) : env
+        Just x -> do
+          putStrLn $ "Error: " ++ show x ++ " is not a file"
+          repLoop env
         Nothing -> do
           putStrLn "use :l to load a file first"
           repLoop env
@@ -65,9 +67,16 @@ repLoop env = do
       case preCompileToLambda input of
         Right term -> print term
         Left  err  -> print err
+      
       case compileToLambda input of
         Right term -> do
           print term
+          
+          -- also do compilation to SKI  
+          case compile term of
+            Right cTerm -> print cTerm
+            Left  err   -> print err
+        
           let result = eval term env
           print result
           case result of
@@ -75,13 +84,18 @@ repLoop env = do
               putStrLn $ toString term
               repLoop $ ("it", term) : env -- :: IO ()
             Left err -> print err
+          
+
         Left err -> print err
 
+
+separateNameAndValue :: [Char] -> (String, [Char])
 separateNameAndValue str =
   let name  = (head . words) str
       value = drop (1 + length name) str
    in (name, value)
 
+main :: IO ()
 main = do
   hSetEncoding stdin utf8
   hSetEncoding stdout utf8

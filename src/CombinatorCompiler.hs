@@ -5,7 +5,7 @@ module CombinatorCompiler where
 import LambdaTerm
 import CombinatorTerm
 import Control.Monad.Except
---import Data.Bifunctor
+
 
 compile :: (MonadError LispkitError m) =>  LTerm -> m CombinatorTerm
 compile (LInt int)   = return $ I (CInt int)
