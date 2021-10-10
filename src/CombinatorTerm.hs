@@ -15,6 +15,8 @@ data CombinatorTerm =
   | CBool Bool
   | CList [CombinatorTerm]
   | CFree String
+  | CApp CombinatorTerm CombinatorTerm
+  | CNil
 
 -- | As the LTerm data type contains function elements (like LBinPrimOp) we can't use deriving (Show) but have to implement it manually      
 instance Show CombinatorTerm where
@@ -31,11 +33,16 @@ instance Show CombinatorTerm where
   show (CBool b)               = show b
   show (CList l)               = show l
   show (CFree x)               = x
+  show (CApp x y)              = "CApp " ++ show x ++ " " ++ show y
+  show CNil                    = "CNil"
   
 type BinOp = CombinatorTerm -> CombinatorTerm -> CombinatorTerm
 type UnyOp = CombinatorTerm -> CombinatorTerm
 
 k :: BinOp
 k x _y = x
+  
+i :: UnyOp
+i x = x  
   
 

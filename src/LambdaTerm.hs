@@ -21,7 +21,7 @@ data LTerm = LInt Integer
            | LUnyOp String LTerm
            | LApp LTerm [LTerm]
            | LAbs String LTerm Environment
-             deriving (Generic)
+           --  deriving (Generic)
              
 -- | As the LTerm data type contains function elements (like LBinPrimOp) we can't use deriving (Eq) but have to implement it manually             
 instance Eq LTerm where
