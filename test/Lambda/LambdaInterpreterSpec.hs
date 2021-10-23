@@ -82,7 +82,7 @@ spec =
       .&&. readEval "(let (+ a 10) (a 7))" [] === LInt 17
       .&&. readEval "(let (a 5) (a (lambda (n) (+ n n))))" [] === LInt 10
       .&&. readEval "(let (let (+  a b) (b 7)) (a 9))" [] === LInt 16
---      .&&. readEval "(letrec (fac 10) (fac (lambda (n) (if (eq n 0) 1 (* n (fac (- n 1)))))))" [] === LInt 3628800
+--      .&&. readEval "(let (fac 10) (fac (lambda (n) (if (eq n 0) 1 (* n (fac (- n 1)))))))" [] === LInt 3628800
 --      .&&. readEval "(letrec (a 2 3) (a (lambda (n m) (if (eq n 0) (+ m 1) (if (eq m 0) (a (- n 1) 1) (a (- n 1) (a n (- m 1))))))))" [] === LInt 9
     it "provides static / lexical scopes" $
       readEval "(let (let (let (g 5) (x 3)) (g (lambda (z) (* x z)))) (x 7))" [] === LInt 35

@@ -1,4 +1,4 @@
-(let (fac 1000)
+(let (fac 10)
   (fac (lambda (n)
          (if (eq n 0)
              1
