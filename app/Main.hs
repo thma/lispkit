@@ -1,8 +1,5 @@
 module Main where
 
-import           Control.Monad
-import           Control.Monad.Except
-import           System.Environment
 import           System.IO            (hFlush, hSetEncoding, stdin, stdout, utf8)
 import           LambdaCompiler       (compileToLambda, preCompileToLambda)
 import           LambdaInterpreter
@@ -81,12 +78,15 @@ repLoop env = do
           print result
           case result of
             Right term -> do
-              putStrLn $ toString term
-              repLoop $ ("it", term) : env -- :: IO ()
-            Left err -> print err
-          
+              print term
+              repLoop $ ("it", term) : env 
+            Left err -> do 
+              print err
+              repLoop env         
 
-        Left err -> print err
+        Left err -> do
+          print err
+          repLoop env
 
 
 separateNameAndValue :: [Char] -> (String, [Char])
