@@ -1,0 +1,46 @@
+{
+  // Verwendet IntelliSense zum Ermitteln möglicher Attribute.
+  // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
+  // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "ghc",
+      "request": "launch",
+      "name": "haskell(stack)",
+      "internalConsoleOptions": "openOnSessionStart",
+      "workspace": "${workspaceFolder}",
+      "startup": "${workspaceFolder}/app/Main.hs",
+      "startupFunc": "",
+      "startupArgs": "",
+      "stopOnEntry": false,
+      "mainArgs": "",
+      "ghciPrompt": "H>>= ",
+      "ghciInitialPrompt": "> ",
+      "ghciCmd": "stack ghci --no-load --no-build --main-is TARGET",
+      "ghciEnv": {},
+      "logFile": "${workspaceFolder}/.vscode/phoityne.log",
+      "logLevel": "WARNING",
+      "forceInspect": false
+    },
+    {
+      "type": "ghc",
+      "request": "launch",
+      "name": "haskell(cabal)",
+      "internalConsoleOptions": "openOnSessionStart",
+      "workspace": "${workspaceFolder}",
+      "startup": "${workspaceFolder}/app/Main.hs",
+      "startupFunc": "",
+      "startupArgs": "",
+      "stopOnEntry": false,
+      "mainArgs": "",
+      "ghciPrompt": "H>>= ",
+      "ghciInitialPrompt": "> ",
+      "ghciCmd": "cabal exec -- ghci-dap --interactive -i -i${workspaceFolder}",
+      "ghciEnv": {},
+      "logFile": "${workspaceFolder}/.vscode/phoityne.log",
+      "logLevel": "WARNING",
+      "forceInspect": false
+    }
+  ]
+}

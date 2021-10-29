@@ -19,12 +19,14 @@ evalFile env file = do
   evalString env input
 
 evalString :: Environment -> String -> IO LTerm
-evalString env input = return $
+evalString env input = 
   case compileToLambda input of
-   Right term -> case eval term env of
-     Right result -> result
-     Left err       -> LVar $ show err
-   Left  err      -> LVar $ show err
+   Right term -> do 
+      print term
+      return $ case eval term env of
+        Right result -> result
+        Left err     -> LVar $ show err
+   Left err   -> return $ LVar $ show err
 
 repLoop :: Environment -> IO ()
 repLoop env = do
@@ -100,4 +102,7 @@ main = do
   hSetEncoding stdin utf8
   hSetEncoding stdout utf8
   putStrLn "Welcome to lispkit"
+  res <- evalFile [] "init.lsp"
+  print res
   repLoop []
+  return ()
