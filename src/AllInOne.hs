@@ -14,20 +14,21 @@ type Parser = Parsec String ()
 infixl 5 :@
 data Expr = 
     Expr :@ Expr 
-  | Var String 
---  | Int Integer 
+  | Var String
+--  | Int Integer
   | Lam String Expr
   deriving Show
 
 source :: Parser [(String, Expr)]
 source = catMaybes <$> many maybeLet where
   maybeLet = between ws newline $ optionMaybe $ (,) <$> v <*> (str "=" >> term)
-  term = lam <|> app
+  term = lam <|> app -- <|> int
   lam = flip (foldr Lam) <$> between lam0 lam1 (many1 v) <*> term where
     lam0 = str "\\" <|> str "\0955"
     lam1 = str "->" <|> str "."
   app = foldl1' (:@) <$> many1
     ((Var <$> v) <|> between (str "(") (str ")") term)
+--  int = return $ Int (read <$> many1 digit)
   v   = many1 alphaNum <* ws
   str = (>> ws) . string
   ws = many (oneOf " \t") >> optional (try $ string "--" >> many (noneOf "\n"))  
@@ -37,19 +38,6 @@ fv vs (Var s) | s `elem` vs = []
               | otherwise   = [s]
 fv vs (x :@ y)              = fv vs x `union` fv vs y
 fv vs (Lam s f)             = fv (s:vs) f
-
-babs0 :: [(String, Expr)] -> Expr -> Expr
-babs0 env (Lam x e)
-  | Var y <- t, x == y  = Var "s" :@ Var "k" :@ Var "k"
-  | x `notElem` fv [] t = Var "k" :@ t
-  | m :@ n <- t         = Var "s" :@
-    babs0 env (Lam x m) :@ babs0 env (Lam x n)
-  where t = babs0 env e
-babs0 env (Var s)
-  | Just t <- lookup s env = babs0 env t
-  | otherwise              = Var s
-babs0 env (m :@ n) = babs0 env m :@ babs0 env n
-
 
 babs :: [(String, Expr)] -> Expr -> Expr
 babs env (Lam x e)
@@ -87,7 +75,13 @@ toSK s = do
   case lookup "main" env of
     Nothing -> Left $ error "missing main"
     Just t -> pure $ babs env t :@ Var "u" :@ Var "z"
-    
+
+--redStep :: Expr -> Int
+--redStep (Var "z") = 0
+--redStep (Var "u") :@ x =  +
+
+
+
 toArr :: Int -> Expr -> [Int]
 toArr n (Var "z") = [0]
 toArr n (Var "u") = [1]
@@ -141,35 +135,55 @@ main = do
   case toSK testSource of
     Left err -> print $ "error: " ++ show err
     Right sk -> do
-      putStrLn $ "compiled to SKI: " ++ showSK sk    
-      putStrLn $ "encoded: " ++ show (I.fromAscList $ zip [0..] $ encodeTree sk)
+      putStrLn $ "compiled to SKI: " ++ showSK sk
+      putStrLn $ "as graph: " ++ show sk
+      -- putStrLn $ "encoded: " ++ show (I.fromAscList $ zip [0..] $ encodeTree sk)
       putStrLn $ "run it: " ++ show (run (I.fromAscList $ zip [0..] $ encodeTree sk) [4])
 
-expr :: Parser Expr
-expr = foldl1 (:@) <$>
-  many1 ((Var . pure <$> letter) <|> between (char '(') (char ')') expr)
 
-skRepl :: InputT IO ()
-skRepl = do
-  ms <- getInputLine "> "
-  case ms of
-    Nothing -> outputStrLn ""
-    Just s  -> do
-      let Right e = parse expr "" s
-      outputStrLn $ show $ encodeTree e
-      --outputStrLn $ show $ compile $ encodeTree e
-      outputStrLn $ show $ run (I.fromAscList $ zip [0..] $ encodeTree e) [4]
-      skRepl   
+testSource = "main = s k k"
+
+--testSource = "id = \\x -> x \n" ++
+--             "1 = \\f x -> f x \n" ++
+--             "main = id 1"
       
-      
-testSource = "true = \\x y -> x \n" ++
-             "false = \\x y -> y \n" ++
-             "0 = \\f x -> x \n" ++
-             "1 = \\f x -> f x \n" ++
-             "succ = \\n f x -> f(n f x) \n" ++
-             "pred = \\n f x -> n(\\g h -> h (g f)) (\\u -> x) (\\u ->u) \n" ++
-             "mul = \\m n f -> m(n f) \n" ++
-             "is0 = \\n -> n (\\x -> false) true \n" ++
-             "Y = \\f -> (\\x -> x x)(\\x -> f(x x)) \n" ++
-             "fact = Y(\\f n -> (is0 n) 1 (mul n (f (pred n)))) \n" ++
-             "main = fact (succ (succ (succ 1))) \n"          
+--testSource = "true = \\x y -> x \n" ++
+--             "false = \\x y -> y \n" ++
+--             "0 = \\f x -> x \n" ++
+--             "1 = \\f x -> f x \n" ++
+--             "succ = \\n f x -> f(n f x) \n" ++
+--             "pred = \\n f x -> n(\\g h -> h (g f)) (\\u -> x) (\\u ->u) \n" ++
+--             "mul = \\m n f -> m(n f) \n" ++
+--             "is0 = \\n -> n (\\x -> false) true \n" ++
+--             "Y = \\f -> (\\x -> x x)(\\x -> f(x x)) \n" ++
+--             "fact = Y(\\f n -> (is0 n) 1 (mul n (f (pred n)))) \n" ++
+--             "main = fact (succ (succ (succ 1))) \n"
+
+
+--skRepl :: InputT IO ()
+--skRepl = do
+--  ms <- getInputLine "> "
+--  case ms of
+--    Nothing -> outputStrLn ""
+--    Just s  -> do
+--      let Right e = parse expr "" s
+--      outputStrLn $ show $ encodeTree e
+--      --outputStrLn $ show $ compile $ encodeTree e
+--      outputStrLn $ show $ run (I.fromAscList $ zip [0..] $ encodeTree e) [4]
+--      skRepl
+
+--expr :: Parser Expr
+--expr = foldl1 (:@) <$>
+--  many1 ((Var . pure <$> letter) <|> between (char '(') (char ')') expr)
+
+--babs0 :: [(String, Expr)] -> Expr -> Expr
+--babs0 env (Lam x e)
+--  | Var y <- t, x == y  = Var "s" :@ Var "k" :@ Var "k"
+--  | x `notElem` fv [] t = Var "k" :@ t
+--  | m :@ n <- t         = Var "s" :@
+--    babs0 env (Lam x m) :@ babs0 env (Lam x n)
+--  where t = babs0 env e
+--babs0 env (Var s)
+--  | Just t <- lookup s env = babs0 env t
+--  | otherwise              = Var s
+--babs0 env (m :@ n) = babs0 env m :@ babs0 env n
