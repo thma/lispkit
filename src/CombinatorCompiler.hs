@@ -60,3 +60,8 @@ compile (LApp t1 t2) = do
 compile (LAbs var term env) = do
   return CNil -- TODO !!
   
+--bracket :: String -> LTerm -> CombinatorTerm
+--bracket var (LVar x) = case var == v of
+--  true  -> I
+--  false -> CFree x
+--bracket var 

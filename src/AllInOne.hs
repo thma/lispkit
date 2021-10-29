@@ -15,7 +15,9 @@ infixl 5 :@
 data Expr = 
     Expr :@ Expr 
   | Var String 
+--  | Int Integer 
   | Lam String Expr
+  deriving Show
 
 source :: Parser [(String, Expr)]
 source = catMaybes <$> many maybeLet where
@@ -135,15 +137,13 @@ showSK (x :@ y) = showSK x ++ showR y where
   showR _       = "(" ++ showSK y ++ ")"
 
 main :: IO ()
-main = do
-  input <- readFile "lambda.src"
-  putStrLn $ case toSK input of
-    Left err -> "error: " ++ show err
-    Right sk -> unlines
-      [ showSK sk
-  --    , show $ compile $ encodeTree sk
-      , show $ run (I.fromAscList $ zip [0..] $ encodeTree sk) [4]
-      ]
+main = do 
+  case toSK testSource of
+    Left err -> print $ "error: " ++ show err
+    Right sk -> do
+      putStrLn $ "compiled to SKI: " ++ showSK sk    
+      putStrLn $ "encoded: " ++ show (I.fromAscList $ zip [0..] $ encodeTree sk)
+      putStrLn $ "run it: " ++ show (run (I.fromAscList $ zip [0..] $ encodeTree sk) [4])
 
 expr :: Parser Expr
 expr = foldl1 (:@) <$>
@@ -159,4 +159,17 @@ skRepl = do
       outputStrLn $ show $ encodeTree e
       --outputStrLn $ show $ compile $ encodeTree e
       outputStrLn $ show $ run (I.fromAscList $ zip [0..] $ encodeTree e) [4]
-      skRepl       
+      skRepl   
+      
+      
+testSource = "true = \\x y -> x \n" ++
+             "false = \\x y -> y \n" ++
+             "0 = \\f x -> x \n" ++
+             "1 = \\f x -> f x \n" ++
+             "succ = \\n f x -> f(n f x) \n" ++
+             "pred = \\n f x -> n(\\g h -> h (g f)) (\\u -> x) (\\u ->u) \n" ++
+             "mul = \\m n f -> m(n f) \n" ++
+             "is0 = \\n -> n (\\x -> false) true \n" ++
+             "Y = \\f -> (\\x -> x x)(\\x -> f(x x)) \n" ++
+             "fact = Y(\\f n -> (is0 n) 1 (mul n (f (pred n)))) \n" ++
+             "main = fact (succ (succ (succ 1))) \n"          
