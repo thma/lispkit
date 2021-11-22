@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 module LambdaTerm 
   ( LTerm (..)
   , LispkitError (..)
@@ -8,7 +7,6 @@ module LambdaTerm
   , toString
   ) where
   
-import GHC.Generics
 
 -- | a lambda term representation with support for ints, lists, and unary and binary primitive operations
 data LTerm = LInt Integer
@@ -21,7 +19,6 @@ data LTerm = LInt Integer
            | LUnyOp String LTerm
            | LApp LTerm [LTerm]
            | LAbs String LTerm Environment
-           --  deriving (Generic)
              
 -- | As the LTerm data type contains function elements (like LBinPrimOp) we can't use deriving (Eq) but have to implement it manually             
 instance Eq LTerm where
