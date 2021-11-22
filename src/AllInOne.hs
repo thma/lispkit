@@ -6,6 +6,7 @@ import Data.List
 import Data.Maybe
 import Text.Parsec
 import Data.Functor.Identity (Identity)
+import           System.IO            (hSetEncoding, stdin, stdout, utf8)
 
 type Parser = Parsec String ()
 
@@ -53,7 +54,7 @@ source = catMaybes <$> many maybeLet where
   mathOp = string "+" <|> string "/" <|> string "*" -- <|> string "-"
 
   str = (>> ws) . string
-  
+
 ws :: ParsecT String u Identity ()
 ws = many (oneOf " \t") >> optional (try $ string "--" >> many (noneOf "\n"))
 
@@ -95,14 +96,14 @@ noLamEq _ _ = False
 
 
 opt :: Expr -> Expr
-opt (Var "i" :@ n@(Int _n)) = n 
---opt (((Var "s" :@ Var "+") :@ (Var "k" :@ Int 3)) :@ Int 23) = 
+opt (Var "i" :@ n@(Int _n)) = n
+opt ((Var "s" :@ e1) :@ (Var "k" :@ e2)) = (Var "c" :@ e1) :@ e2
 
 opt (x :@ y) = opt x :@ opt y
 opt x = x
 
 ropt :: Expr -> Expr
-ropt expr = 
+ropt expr =
   let expr' = opt expr
   in  if expr' == expr
         then expr
@@ -131,8 +132,13 @@ toSK s = do
 red :: Expr -> Expr
 red i@(Int _i) = i
 red (Var "i" :@ x) = x
+red (Var "i" :@ x :@ y) = x :@ y 
 red (Var "k" :@ x :@ _) = x
-red (Var "s" :@ p :@ q :@ x) = (p :@ x) :@ (q :@ x)
+red (Var "k" :@ x :@ _ :@ z) = x :@ z  
+red (Var "s" :@ f :@ g :@ x) = f :@ x :@ (g :@ x)
+red (Var "s" :@ f :@ g :@ x :@ z) = f :@ x :@ (g :@ x) :@ z
+red (Var "c" :@ f :@ g :@ x) = f :@ x :@ g
+red (Var "b" :@ f :@ g :@ x) = f :@  (g :@ x)
 red (Var "is0" :@ x)    = if reduce x == Int 0 then Int 1 else Int 0
 red (Var "sub1" :@ x)   = let (Int x') = reduce x in Int (x' - 1)
 red (Var "+" :@ x :@ y) = mathReduce x y (+)
@@ -143,8 +149,13 @@ red (Var "if" :@ pred :@ thenPart :@ elsePart) =
   if reduce pred == Int 1
     then thenPart
     else elsePart
+-- fallback:
+red x = x
 
-red x = error $ "can't reduce " ++ show x
+--(C f g x) = ((f x) g)
+--(B f g x) = (f (g x))
+--(S f g x) = (f x (g x))
+
 
 mathReduce :: Expr -> Expr -> (Integer -> Integer -> Integer) -> Expr
 mathReduce x y f =
@@ -168,6 +179,8 @@ showSK x        = show x ++ " "
 
 main :: IO ()
 main = do
+  hSetEncoding stdin  utf8
+  hSetEncoding stdout utf8
   putStrLn testSource
   case toSK testSource of
     Left err -> print $ "error: " ++ show err
@@ -178,17 +191,20 @@ main = do
       -- putStrLn $ "encoded: " ++ show (I.fromAscList $ zip [0..] $ encodeTree sk)
       -- putStrLn $ "run it: " ++ show (run (I.fromAscList $ zip [0..] $ encodeTree sk) [4])
 
-testSource =
-     "f = λx. + x 3 \n"
-  ++ "g = λx. * x 7\n"
-  ++ "h = λx. x \n"
-  ++ "compose = λf g. f g \n"
-  ++ "main = f 23"
+--testSource =
+--     "f = \\x y -> + x 3 \n"
+--  ++ "g = λx. * x 7\n"
+--  ++ "fact = λn. if (is0 n) 1 (* n (fact (sub1 n))) \n"
+--  ++ "compose = λf g. f g \n"
+--  ++ "main = fact 7"
 
--- testSource = 
---   "Y = λf . (λx. x x)(λx . f(x x)) \n" ++
---   "fact = Y(λf n. if (is0 n) 1 (* n (f (sub1 n)))) \n" ++
---   "main = s k i 4 \n"
+-- "main = c i 2 (+ 1)"
+-- "main = s k i 4 \n"
+
+testSource =
+   "Y = λf . (λx. x x)(λx . f(x x)) \n" ++
+   "fact = Y(λf n. if (is0 n) 1 (* n (f (sub1 n)))) \n" ++
+   "main = fact 4 \n"
 
 
 --testSource = "id = \\x -> x \n" ++
