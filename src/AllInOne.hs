@@ -7,6 +7,9 @@ import Data.Maybe
 import Text.Parsec
 import Data.Functor.Identity (Identity)
 import           System.IO            (hSetEncoding, stdin, stdout, utf8)
+import Data.IORef ( newIORef, readIORef )
+import GHC.IORef ( IORef(IORef) )
+import GHC.Base ( IO(IO) )
 
 
 type Parser = Parsec String ()
@@ -126,15 +129,15 @@ fun opt (sapp(sapp(scomb S,sapp(scomb K,e)),scomb I)) = (e : snode)
 -- graph allocation
 type Pointer = Int
 
-data Graph = 
+data Graph =
     Node Pointer Pointer
   | Comb String
-  | Num  Integer 
+  | Num  Integer
   deriving Show
 
-allocate :: Expr -> [(Pointer, Graph)]  
-allocate expr =   
-  alloc expr 1 [] 
+allocate :: Expr -> [(Pointer, Graph)]
+allocate expr =
+  alloc expr 1 []
   where
     maxPointer :: [(Pointer, Graph)] -> Pointer
     maxPointer x = maximum $ map fst x
@@ -142,7 +145,7 @@ allocate expr =
     alloc :: Expr -> Int -> [(Int, Graph)] -> [(Int, Graph)]
     alloc (Var name) pointer memMap = (pointer, Comb name) : memMap
     alloc (Int val)  pointer memMap = (pointer, Num val) : memMap
-    alloc (l :@ r)   pointer memMap = 
+    alloc (l :@ r)   pointer memMap =
       let pointerL = pointer+1
           allocL   = alloc l pointerL []
           maxL     = maxPointer allocL
@@ -163,6 +166,37 @@ spine g@(Node l r) mm stack = spine (getNode l mm) mm (g:stack)
       Nothing -> error $ "deref " ++ show p ++ " in " ++ show mm
       Just g  -> g
 
+--- allocation with IORefs
+data Graf =
+    Nod (IO (IORef Graf)) (IO (IORef Graf))
+  | Com String
+  | Numb  Integer
+
+   
+alloc :: Expr -> IO (IORef Graf)
+alloc expr = newIORef(allocate expr)
+  where
+    allocate (Var name) = Com name
+    allocate (Int val)  = Numb val
+    allocate (l :@ r)   =
+      let refL = newIORef (allocate l)
+          refR = newIORef (allocate r)
+      in  Nod refL refR
+    allocate _ = error $ "all lambdas must be abstracted first: " ++ show expr  
+
+dealloc :: IO (IORef Graf) -> IO Expr
+dealloc graphRef  = do
+  gRef <- graphRef
+  payload <- readIORef gRef
+  case payload of
+    (Com c) -> return $ Var c
+    (Numb n) -> return $ Int n
+    (Nod l r) -> do
+      rExpr <- dealloc r
+      lExpr <- dealloc l
+      return (lExpr :@ rExpr) 
+
+  
 
 -- parse a lambda expression
 toSK :: String -> Either ParseError Expr
@@ -179,9 +213,9 @@ getSK _           = Var "error"
 red :: Expr -> Expr
 red i@(Int _i) = i
 red (Var "i" :@ x) = x
-red (Var "i" :@ x :@ y) = x :@ y 
+red (Var "i" :@ x :@ y) = x :@ y
 red (Var "k" :@ x :@ _) = x
-red (Var "k" :@ x :@ _ :@ z) = x :@ z  
+red (Var "k" :@ x :@ _ :@ z) = x :@ z
 red (Var "s" :@ f :@ g :@ x) = f :@ x :@ (g :@ x)
 red (Var "s" :@ f :@ g :@ x :@ z) = f :@ x :@ (g :@ x) :@ z
 red (Var "c" :@ f :@ g :@ x) = f :@ x :@ g
