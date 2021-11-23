@@ -8,6 +8,7 @@ import Text.Parsec
 import Data.Functor.Identity (Identity)
 import           System.IO            (hSetEncoding, stdin, stdout, utf8)
 
+
 type Parser = Parsec String ()
 
 infixl 5 :@
@@ -122,12 +123,58 @@ fun opt (sapp(sapp(scomb S,sapp(scomb K,e)),scomb I)) = (e : snode)
 
 -}
 
+-- graph allocation
+type Pointer = Int
+
+data Graph = 
+    Node Pointer Pointer
+  | Comb String
+  | Num  Integer 
+  deriving Show
+
+allocate :: Expr -> [(Pointer, Graph)]  
+allocate expr =   
+  alloc expr 1 [] 
+  where
+    maxPointer :: [(Pointer, Graph)] -> Pointer
+    maxPointer x = maximum $ map fst x
+
+    alloc :: Expr -> Int -> [(Int, Graph)] -> [(Int, Graph)]
+    alloc (Var name) pointer memMap = (pointer, Comb name) : memMap
+    alloc (Int val)  pointer memMap = (pointer, Num val) : memMap
+    alloc (l :@ r)   pointer memMap = 
+      let pointerL = pointer+1
+          allocL   = alloc l pointerL []
+          maxL     = maxPointer allocL
+          pointerR = maxL + 1
+          allocR   = alloc r pointerR []
+          maxR     = maxPointer allocR
+      in
+      (pointer, Node pointerL pointerR) : (allocL ++ allocR ++ memMap)
+    alloc (Lam _ _)  pointer memMap = error "lambdas should already be abstracted"
+
+spine :: Graph -> [(Pointer, Graph)] -> [Graph]-> (Graph, [Graph])
+spine c@(Comb _)   mm stack = (c, stack)
+spine n@(Num _)    mm stack = (n, stack)
+spine g@(Node l r) mm stack = spine (getNode l mm) mm (g:stack)
+  where
+    getNode :: Pointer -> [(Pointer, Graph)] -> Graph
+    getNode p mm = case lookup p mm of
+      Nothing -> error $ "deref " ++ show p ++ " in " ++ show mm
+      Just g  -> g
+
+
+-- parse a lambda expression
 toSK :: String -> Either ParseError Expr
 toSK s = do
   env <- parse source "" (s ++ "\n")
   case lookup "main" env of
     Nothing -> Left $ error "missing main function!"
     Just t -> pure $ ropt $ babs env t
+
+getSK :: Either ParseError Expr -> Expr
+getSK (Right exp) = exp
+getSK _           = Var "error"
 
 red :: Expr -> Expr
 red i@(Int _i) = i
