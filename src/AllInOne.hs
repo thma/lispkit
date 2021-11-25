@@ -166,11 +166,16 @@ spine' g@(Node l r) mm stack = spine' (getNode l mm) mm (g:stack)
       Nothing -> error $ "deref " ++ show p ++ " in " ++ show mm
       Just g  -> g
 
-spine :: IORef Graf -> [IORef Graph]-> (IORef Graph, [IORef Graph])
-spine ioRefGraph stack = case ioRefGraph of
-  IORef (Com c) -> (ioRefGraph, stack)
-  IORef (Numb i) -> (ioRefGraph, stack)
-  IORef (Node l r) -> spine l (ioRefGraph:stack)
+spine :: IORef Graf -> [IORef Graf]-> IO (IORef Graf, [IORef Graf])
+spine ioRefGraph stack = do 
+  derefGraph <- readIORef ioRefGraph
+  case derefGraph of
+    Com c   -> return (ioRefGraph, stack)
+    Numb i  -> return (ioRefGraph, stack)
+    Nod l r -> do
+      derefL <- l
+      spine derefL (ioRefGraph:stack)
+
 
 -- spine c@(Comb _)   mm stack = (c, stack)
 -- spine n@(Num _)    mm stack = (n, stack)
