@@ -156,15 +156,30 @@ allocate expr =
       (pointer, Node pointerL pointerR) : (allocL ++ allocR ++ memMap)
     alloc (Lam _ _)  pointer memMap = error "lambdas should already be abstracted"
 
-spine :: Graph -> [(Pointer, Graph)] -> [Graph]-> (Graph, [Graph])
-spine c@(Comb _)   mm stack = (c, stack)
-spine n@(Num _)    mm stack = (n, stack)
-spine g@(Node l r) mm stack = spine (getNode l mm) mm (g:stack)
+spine' :: Graph -> [(Pointer, Graph)] -> [Graph]-> (Graph, [Graph])
+spine' c@(Comb _)   mm stack = (c, stack)
+spine' n@(Num _)    mm stack = (n, stack)
+spine' g@(Node l r) mm stack = spine' (getNode l mm) mm (g:stack)
   where
     getNode :: Pointer -> [(Pointer, Graph)] -> Graph
     getNode p mm = case lookup p mm of
       Nothing -> error $ "deref " ++ show p ++ " in " ++ show mm
       Just g  -> g
+
+spine :: IORef Graf -> [IORef Graph]-> (IORef Graph, [IORef Graph])
+spine ioRefGraph stack = case ioRefGraph of
+  IORef (Com c) -> (ioRefGraph, stack)
+  IORef (Numb i) -> (ioRefGraph, stack)
+  IORef (Node l r) -> spine l (ioRefGraph:stack)
+
+-- spine c@(Comb _)   mm stack = (c, stack)
+-- spine n@(Num _)    mm stack = (n, stack)
+-- spine g@(Node l r) mm stack = spine (getNode l mm) mm (g:stack)
+--   where
+--     getNode :: Pointer -> [(Pointer, Graph)] -> Graph
+--     getNode p mm = case lookup p mm of
+--       Nothing -> error $ "deref " ++ show p ++ " in " ++ show mm
+--       Just g  -> g
 
 --- allocation with IORefs
 data Graf =
@@ -269,6 +284,13 @@ main = do
       putStrLn $ "compiled to SKI: " ++ showSK sk
       putStrLn $ "as graph: " ++ show sk
       putStrLn $ "reduce: "   ++ show (reduce sk)
+      let sk = getSK (toSK "main = c i 2 (+ 1)")
+      print sk
+      let g = alloc sk
+      deallocG <- dealloc g
+      print deallocG
+
+
       -- putStrLn $ "encoded: " ++ show (I.fromAscList $ zip [0..] $ encodeTree sk)
       -- putStrLn $ "run it: " ++ show (run (I.fromAscList $ zip [0..] $ encodeTree sk) [4])
 
