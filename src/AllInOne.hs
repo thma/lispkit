@@ -7,10 +7,6 @@ import Data.Maybe
 import Text.Parsec
 import Data.Functor.Identity (Identity)
 import           System.IO            (hSetEncoding, stdin, stdout, utf8)
-import Data.IORef ( newIORef, readIORef )
-import GHC.IORef ( IORef(IORef) )
-import GHC.Base ( IO(IO) )
-
 
 type Parser = Parsec String ()
 
@@ -48,7 +44,7 @@ source = catMaybes <$> many maybeLet where
   app = foldl1' (:@) <$> many1
     (
      try num
-     <|> (Var <$> var)
+     <|> Var <$> var
      <|> between (str "(") (str ")") term )
 
   var :: ParsecT String u Identity String
@@ -100,10 +96,10 @@ noLamEq _ _ = False
 
 
 opt :: Expr -> Expr
-opt (Var "i" :@ n@(Int _n)) = n
-opt ((Var "s" :@ e1) :@ (Var "k" :@ e2)) = (Var "c" :@ e1) :@ e2
+--opt (Var "i" :@ n@(Int _n)) = n
+--opt ((Var "s" :@ e1) :@ (Var "k" :@ e2)) = (Var "c" :@ e1) :@ e2
 
-opt (x :@ y) = opt x :@ opt y
+--opt (x :@ y) = opt x :@ opt y
 opt x = x
 
 ropt :: Expr -> Expr
@@ -133,13 +129,28 @@ data Graph =
     Node Pointer Pointer
   | Comb String
   | Num  Integer
-  deriving Show
+  deriving (Eq, Show)
 
-allocate :: Expr -> [(Pointer, Graph)]
+type AllocatedGraph = [(Pointer, Graph)]
+
+collectAllReachables :: Pointer -> AllocatedGraph -> AllocatedGraph -> AllocatedGraph
+collectAllReachables rootP aGraph result =
+  let rootNode = peek rootP aGraph
+  in case rootNode of
+    Node l r -> (l, peek l aGraph) : (r, peek r aGraph) : collectAllReachables l aGraph result ++ collectAllReachables r aGraph result ++ result
+    Comb s -> result
+    Num n -> result
+
+
+compactify :: Pointer -> AllocatedGraph -> AllocatedGraph
+compactify rootP aGraph = (rootP, peek rootP aGraph) : collectAllReachables rootP aGraph []
+
+
+allocate :: Expr -> AllocatedGraph
 allocate expr =
   alloc expr 1 []
   where
-    maxPointer :: [(Pointer, Graph)] -> Pointer
+    maxPointer :: AllocatedGraph -> Pointer
     maxPointer x = maximum $ map fst x
 
     alloc :: Expr -> Int -> [(Int, Graph)] -> [(Int, Graph)]
@@ -156,67 +167,119 @@ allocate expr =
       (pointer, Node pointerL pointerR) : (allocL ++ allocR ++ memMap)
     alloc (Lam _ _)  pointer memMap = error "lambdas should already be abstracted"
 
-spine' :: Graph -> [(Pointer, Graph)] -> [Graph]-> (Graph, [Graph])
-spine' c@(Comb _)   mm stack = (c, stack)
-spine' n@(Num _)    mm stack = (n, stack)
-spine' g@(Node l r) mm stack = spine' (getNode l mm) mm (g:stack)
-  where
-    getNode :: Pointer -> [(Pointer, Graph)] -> Graph
-    getNode p mm = case lookup p mm of
-      Nothing -> error $ "deref " ++ show p ++ " in " ++ show mm
-      Just g  -> g
 
-spine :: IORef Graf -> [IORef Graf]-> IO (IORef Graf, [IORef Graf])
-spine ioRefGraph stack = do 
-  derefGraph <- readIORef ioRefGraph
-  case derefGraph of
-    Com c   -> return (ioRefGraph, stack)
-    Numb i  -> return (ioRefGraph, stack)
-    Nod l r -> do
-      derefL <- l
-      spine derefL (ioRefGraph:stack)
+spine :: Pointer -> AllocatedGraph -> [(Pointer, Graph)] -> (Graph, [(Pointer, Graph)])
+spine rootP graph stack =
+  case peek rootP graph of
+    c@(Comb _)   -> (c, stack)
+    n@(Num _)    -> (n, stack)
+    g@(Node l r) -> spine l graph ((rootP,g):stack)
 
 
--- spine c@(Comb _)   mm stack = (c, stack)
--- spine n@(Num _)    mm stack = (n, stack)
--- spine g@(Node l r) mm stack = spine (getNode l mm) mm (g:stack)
---   where
---     getNode :: Pointer -> [(Pointer, Graph)] -> Graph
---     getNode p mm = case lookup p mm of
---       Nothing -> error $ "deref " ++ show p ++ " in " ++ show mm
---       Just g  -> g
+run :: String -> IO Graph
+run source = do
+  let sk = getSK . toSK $ source
+      g  = allocate sk
+  print sk
+  print g
+  print (spine 1 g [])
+  return $ snd(head(loop 1 g))
 
---- allocation with IORefs
-data Graf =
-    Nod (IO (IORef Graf)) (IO (IORef Graf))
-  | Com String
-  | Numb  Integer
+loop :: Pointer -> AllocatedGraph -> AllocatedGraph
+loop rootP aGraph =
+  let aGraph' = compactify rootP (step rootP aGraph)
+  in  if aGraph == aGraph' 
+        then aGraph
+        else loop rootP aGraph'
 
-   
-alloc :: Expr -> IO (IORef Graf)
-alloc expr = newIORef(allocate expr)
-  where
-    allocate (Var name) = Com name
-    allocate (Int val)  = Numb val
-    allocate (l :@ r)   =
-      let refL = newIORef (allocate l)
-          refR = newIORef (allocate r)
-      in  Nod refL refR
-    allocate _ = error $ "all lambdas must be abstracted first: " ++ show expr  
+step :: Pointer -> AllocatedGraph -> AllocatedGraph
+step rootP graph =
+  let root = peek rootP
+      (g,stack)   = spine rootP graph []
+  in  case g of
+        (Comb k) -> apply k stack graph rootP
+        _        -> graph
 
-dealloc :: IO (IORef Graf) -> IO Expr
-dealloc graphRef  = do
-  gRef <- graphRef
-  payload <- readIORef gRef
-  case payload of
-    (Com c) -> return $ Var c
-    (Numb n) -> return $ Int n
-    (Nod l r) -> do
-      rExpr <- dealloc r
-      lExpr <- dealloc l
-      return (lExpr :@ rExpr) 
+apply :: String -> [(Pointer, Graph)] -> AllocatedGraph-> Pointer -> AllocatedGraph
+apply "i" ((p,Node _ xPointer):_) aGraph rootP =
+  let xVal = peek xPointer aGraph
+  in  poke p xVal aGraph
+apply "k" ((_p, Node _ xPointer):(p, Node _ _):_) aGraph rootP =
+  poke p (peek xPointer aGraph) aGraph
 
-  
+apply k _ _ _ = error $ "undefined combinator " ++ k 
+
+  --  |apply (I,(node as ref(app((_,ref x),_,ref q)))::_) =
+  --       (node := x; set_q node q)
+  --  |apply (K,ref(app((_,ref x),_,ref q))::(node as ref(app(_,_,_)))::_) =
+  --       (node := x; set_q node q)
+  --  |apply (S,(ref(app((_,x),_,_)))::(ref(app((_,y),_,_)))
+  --             ::(node as (ref(app((_,z),m,q))))::_) =
+  --       node := app((ref(app((x,z),ref Eval,q)),
+  --                    ref(app((y,z),ref Eval,q))),
+  --                   ref Eval,q)
+  --  |apply (B,(ref(app((_,x),_,_)))::(ref(app((_,y),_,_)))
+  --             ::(node as (ref(app((_,z),m,q))))::_) =
+  --       node := app((x,ref (app((y,z),ref Eval,q))),ref Eval,q)
+  --  |apply (C,(ref(app((_,x),_,_)))::(ref(app((_,y),_,_)))
+  --             ::(node as (ref(app((_,z),m,q))))::_) =
+  -- node := app((ref(app((x,z),ref Eval,q)),y),ref Eval,q)
+
+  --  |apply (Y,(node as ref(app((_,f),m,q)))::_) =
+  --       node := app((f,node),ref Eval,q)
+  --  |apply (DEF(name),(node as ref(app((_,_),_,_)))::_) =
+  --       node := !(copy(lookup name))
+  --  |apply (PLUS,ref(app((_,ref(atom(int x,_,_))),_,_))::(node as 
+  --               ref(app((_,ref(atom(int y,_,_))),_,q)))::_) =
+  --       node := atom(int(x+y),ref Ready,q)
+  --  |apply (PLUS,(stack as ref(app((_,x),_,_))::
+  --                         ref(app((_,y),_,_))::_)) =
+  --       (subEval (last stack,x);
+  --        subEval (last stack,y); ())
+  --  |apply (MINUS,ref(app((_,ref(atom(int x,_,_))),_,_))::(node as 
+  --                ref(app((_,ref(atom(int y,_,_))),_,q)))::_) =
+  --       node := atom(int(x-y),ref Ready,q)
+  --  |apply (MINUS,(stack as ref(app((_,x),_,_))::
+  --                         ref(app((_,y),_,_))::_)) =
+  --       (subEval (last stack,x);
+  --        subEval (last stack,y); ())
+  --  |apply (TIMES,ref(app((_,ref(atom(int x,_,_))),_,_))::(node as 
+  --                ref(app((_,ref(atom(int y,_,_))),_,q)))::_) =
+  --       node := atom(int(x*y),ref Ready,q)
+  --  |apply (TIMES,(stack as ref(app((_,x),_,_))::
+  --                         ref(app((_,y),_,_))::_)) =
+  --       (subEval (last stack,x);
+  --        subEval (last stack,y); ())
+  --  |apply (DIV,ref(app((_,ref(atom(int x,_,_))),_,_))::(node as 
+  --              ref(app((_,ref(atom(int y,_,_))),_,q)))::_) =
+  --       node := atom(int(x div y),ref Ready,q)
+  --  |apply (DIV,(stack as ref(app((_,x),_,_))::
+  --                         ref(app((_,y),_,_))::_)) =
+  --       (subEval (last stack,x);
+  --        subEval (last stack,y); ())
+  --  |apply (EQ,(stack as ref(app((_,x),_,_))::(node as
+  --                         ref(app((_,y),_,q)))::_)) =
+  --       if (!(get_mark x)) = Ready andalso
+  --          (!(get_mark y)) = Ready 
+  --         then node := atom(bool(equal x y),ref Ready,q)
+  --       else
+  --         (subEval (last stack,x);
+  --         subEval (last stack,y); ())
+  --  |apply (IF,(ref(app((_,ref(atom(bool test,_,_))),_,_))):: 
+  --             (ref(app((_,x),_,_)))::(node as (ref(app((_,y),_,_))))::_) =
+  --       if test then node := !x
+  --       else node := !y
+  --  |apply (IF,(stack as (ref(app((_,test),_,_)):: 
+  --             ref(app((_,x),_,_))::(node as ref(app((_,y),_,q)))::_))) =
+  --       subEval (last stack,test)
+
+
+peek :: Pointer -> AllocatedGraph -> Graph
+peek pointer graph = fromMaybe (error "merde") (lookup pointer graph)
+
+poke :: Pointer -> Graph -> AllocatedGraph -> AllocatedGraph
+poke key value assoc = (key,value):filter ((key /=).fst) assoc
+
 
 -- parse a lambda expression
 toSK :: String -> Either ParseError Expr
@@ -271,7 +334,7 @@ reduce expr =
       then expr
       else reduce expr'
 
-showSK :: Expr -> [Char]
+showSK :: Expr -> String
 showSK (Var s)  = s ++ " "
 showSK (x :@ y) = showSK x ++ showR y where
   showR (Var s) = s ++ " "
@@ -282,18 +345,18 @@ main :: IO ()
 main = do
   hSetEncoding stdin  utf8
   hSetEncoding stdout utf8
-  putStrLn testSource
+  --putStrLn testSource
   case toSK testSource of
     Left err -> print $ "error: " ++ show err
     Right sk -> do
-      putStrLn $ "compiled to SKI: " ++ showSK sk
-      putStrLn $ "as graph: " ++ show sk
-      putStrLn $ "reduce: "   ++ show (reduce sk)
-      let sk = getSK (toSK "main = c i 2 (+ 1)")
+      --putStrLn $ "compiled to SKI: " ++ showSK sk
+      --putStrLn $ "as graph: " ++ show sk
+      --putStrLn $ "reduce: "   ++ show (reduce sk)
+      let sk = getSK (toSK "main = i 23")  --(toSK "main = c i 2 (+ 1)")
       print sk
-      let g = alloc sk
-      deallocG <- dealloc g
-      print deallocG
+      let g = allocate sk
+      print g
+      print $ spine 1 g []
 
 
       -- putStrLn $ "encoded: " ++ show (I.fromAscList $ zip [0..] $ encodeTree sk)
@@ -331,59 +394,5 @@ testSource =
 --             "fact = Y(\\f n -> (is0 n) 1 (mul n (f (pred n)))) \n" ++
 --             "main = fact (succ (succ (succ 1))) \n"
 
--- compilation to byte arrays:
--- toArr :: Int -> Expr -> [Int]
--- toArr n (Var "z") = [0]
--- toArr n (Var "u") = [1]
--- toArr n (Var "k") = [2]
--- toArr n (Var "s") = [3]
--- toArr n (x@(Var _) :@ y@(Var _)) = toArr n x ++ toArr n y
--- toArr n (x@(Var _) :@ y)         = toArr n x ++ [n + 2] ++ toArr (n + 2) y
--- toArr n (x         :@ y@(Var _)) = n + 2 : toArr n y ++ toArr (n + 2) x
--- toArr n (x         :@ y)         = [n + 2, nl] ++ l ++ toArr nl y
---   where l  = toArr (n + 2) x
---         nl = n + 2 + length l
-
--- encodeTree :: Expr -> [Int]
--- encodeTree e = concatMap f $ 0 : toArr 4 e where
---   f n | n < 4     = [n, 0, 0, 0]
---       | otherwise = toU32 $ (n - 3) * 4
-
--- toU32 :: Int -> [Int]
--- toU32 = take 4 . byteMe
-
--- byteMe :: Integral t => t -> [t]
--- byteMe n | n < 256   = n : repeat 0
---          | otherwise = n `mod` 256 : byteMe (n `div` 256)
-
-
--- run :: Num p => I.IntMap Int -> [Int] -> p
--- run m (p:sp) = case p of
---   0 -> 0
---   1 -> 1 + run m (arg 0 : sp)
---   2 -> run m $ arg 0 : drop 2 sp
---   3 -> run m' $ hp:drop 2 sp where
---     m' = insList m $
---       zip [hp..]    (concatMap toU32 [arg 0, arg 2, arg 1, arg 2]) ++
---       zip [sp!!2..] (concatMap toU32 [hp, hp + 8])
---     hp = I.size m
---   _ -> run m $ get p:p:sp
---   where
---   arg k = get (sp!!k + 4)
---   get n = sum $ zipWith (*) ((m I.!) <$> [n..n+3]) ((256^) <$> [0..3])
---   insList = foldr (\(k, a) m -> I.insert k a m)
-
-
---skRepl :: InputT IO ()
---skRepl = do
---  ms <- getInputLine "> "
---  case ms of
---    Nothing -> outputStrLn ""
---    Just s  -> do
---      let Right e = parse expr "" s
---      outputStrLn $ show $ encodeTree e
---      --outputStrLn $ show $ compile $ encodeTree e
---      outputStrLn $ show $ run (I.fromAscList $ zip [0..] $ encodeTree e) [4]
---      skRepl
 
 
